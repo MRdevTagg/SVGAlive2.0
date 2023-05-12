@@ -8,12 +8,8 @@
  */
 import { Animated } from "./SVGAlive(controls).js";
 	window.addEventListener('load',()=>{
-	const anim = new Animated({object : document.querySelector('#your-id')});
-	anim.fps = 24;	
-	anim.loop = true
-	anim.parent.onclick = (e)=>{
-		e.preventDefault();
-		!anim.isPlaying ? anim.start() : anim.stop();
-	}
-
+	const anim = new Animated({
+		object : document.querySelector('#logo')});
+	anim.fps = 35;	
+	anim.start();
 })

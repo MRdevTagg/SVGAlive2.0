@@ -14,8 +14,12 @@ My motivation for this project was the need to easily use the content, specifica
 
 2. **Sizes and viewBox fixes:** Unlike common DOMElements, svg behave different when we talk about sizes and rects. I managed to fix all this challenges researching and learning more about svgs to make it render properly. By the moment I couldn’t fix the viewBox during compilation ‘cause to access the getBBox() object, the svg needs to be actually being rendered on the screen, so I used this function i wrote in case the user wanted to fix the width (considering aspect ratio and the different sizes of each element of course ) that triggers itself when the svg is loaded to fix this on runtime. However, this is provisional, and I'm researching other non-render-environment solutions such as the 'svg-to-path' package
 to achieve this when the file is being compiled.
+**UPDATE:** I solved the issue in a non-render enviroment avoiding a function call trigger on runtime. After a exahustive research i realize how to fix this using simply css and modifying the setSize function. Finally i get a full-responsive svg!!!
 
-3. **Error handling:** I managed to cover all the errors in case they occur so that the app or the animation (on runtime) doesn't crash.
+3. **Animation timing-loop** I faced some challenges while i was building the animation controls, but i haven't struggling that much with it
+'cause i got some previous experience developing games using the canvas API and requestAnimationFrame(), also my previous experience with unity engine and knowledge about its awake(), start(), update(), fixedUpdate() and lastUpdate loop methods internal structure help me a lot.
+
+4. **Error handling:** I managed to cover all the errors in case they occur so that the app or the animation (on runtime) doesn't crash.
 
 ## Technologies used
 
@@ -41,7 +45,6 @@ It is hard to say, but it took about two weeks and a half (not full-time) to get
 ## What's Next?
 
 - Implement an online version of the app using Streams and Blobs instead of all the node packages stuff.
-- Resolve the viewBox issue during compilation in a non-render environment.
 - Extend the Animations library to easily achieve more complex interactivity within the animations.
 - Currently the file loading time are fast (unless you have lot of complicated animations running, which would be a very rare case), and as all the frames are compiled in a single file, it saves a lot of space (nearly the half). But I will like to find a way to compress them even more, but I’m not into it yet.
 - NOTE: As the final svg file must be passed as data to an object tag, and If you’re previewing the page using a code Injection tool (like liveserver), it will render a parsererror within the object because liveserver injects code inside the svg (but it will only affects when previewing the page, not on deployment), to solve this you can use no-code-injection http server or similar. Using vite or React you don’t have any issues of this type

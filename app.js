@@ -9,27 +9,43 @@ const { JSDOM } = require('jsdom');
 const glob = require('glob');
 let filepathString =''
 
-const idMatch = (el,oldID,newID,attr) =>{
-  if(el.getAttribute(attr) === oldID) {
-    el.setAttribute(attr,newID);
+function setSize(parent, frames) {
+  console.log('\x1b[34m...fixing sizes')
+  parent.setAttribute('width', frames[0].getAttribute('width'));
+  parent.setAttribute('height', frames[0].getAttribute('height'));
+  parent.style.width = '100%';
+  parent.style.height = 'auto';
+  frames.forEach((frame) => {
+    frame.style.width = '100%';
+    frame.style.height = 'auto';
+    frame.setAttribute('viewBox', `0 0 ${frame.getAttribute('width')} ${frame.getAttribute('height')}`);
+    frame.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+    frame.removeAttribute('width');
+    frame.removeAttribute('height');
+  });
+
 }
+function idMatch(el, oldID, newID, attr) {
+  if (el.getAttribute(attr) === oldID) {
+    el.setAttribute(attr, newID);
+  }
 }
 
-const fixIDs = async (frame, i) =>{
-frame.setAttribute('id', `frame_${i + 1}`);
-const childs = frame.querySelectorAll('*');
-const ids = frame.querySelectorAll('[id]');
-let oldID, newID;
-ids.forEach((id, j) => {
-  oldID = id.id;
-  newID = `${id.id + '_' + i + '_' + j}`;
-  id.id !== '' && id.setAttribute('id', newID);	
-  childs.forEach(ch =>{
-    idMatch(ch, `#${oldID}`, `#${newID}`, 'xlink:href')
-    idMatch(ch, `url(#${oldID})`, `url(#${newID})`, 'fill')
-    idMatch(ch, `url(#${oldID})`, `url(#${newID})`, 'filter')
+async function fixIDs(frame, i) {
+  frame.setAttribute('id', `frame_${i + 1}`);
+  const childs = frame.querySelectorAll('*');
+  const ids = frame.querySelectorAll('[id]');
+  let oldID, newID;
+  ids.forEach((id, j) => {
+    oldID = id.id;
+    newID = `${id.id + '_' + i + '_' + j}`;
+    id.id !== '' && id.setAttribute('id', newID);
+    childs.forEach(ch => {
+      idMatch(ch, `#${oldID}`, `#${newID}`, 'xlink:href');
+      idMatch(ch, `url(#${oldID})`, `url(#${newID})`, 'fill');
+      idMatch(ch, `url(#${oldID})`, `url(#${newID})`, 'filter');
     });
-});
+  });
 }
 
 async function waitForFileToExist(filePath) {
@@ -56,6 +72,7 @@ function getAvailableFilename(filepath, filename) {
 }
 
 async function Init({ filePath, w = null, }) {
+  console.log('  \x1b[31mDONT CLOSE!')
   console.log(`\x1b[34m...Compiling files`)
   console.log(`\x1b[34m...Generating svg file to \x1b[35m${filePath}`)
   await waitForFileToExist(filePath);
@@ -67,17 +84,14 @@ async function Init({ filePath, w = null, }) {
  
 console.log('\x1b[34m...Resolving ID conflicts')
 console.log(' ')
-console.log('  \x1b[31mDONT CLOSE!')
+
+setSize(parent,frames)
   frames.forEach((frame, i) => {
     fixIDs(frame, i);
-    w && frame.SetwidthAndHeight(frame)
     if (i !== 0) {
       frame.setAttribute('display', 'none');
     }
   });
-
-   parent.setAttribute('width', frames[0].getAttribute('width'));
-   parent.setAttribute('height', frames[0].getAttribute('height'));
 
   const output = parent.outerHTML;
   fs.writeFileSync(filePath, output);
