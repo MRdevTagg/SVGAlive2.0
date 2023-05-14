@@ -6,10 +6,15 @@
  2. - Now just pass the reference to the object in the object prop when you create the Animated instance
  3. - Finally you will have access to all the methods and properties to animate your SVGAlive
  */
-import { Animated } from "./SVGAlive(controls).js";
+import { Animated, getAll } from "./SVGAlive(controls).js";
 	window.addEventListener('load',()=>{
-	const anim = new Animated({
-		object : document.querySelector('#logo')});
-	anim.fps = 35;	
-	anim.start();
+	new Animated({
+		object : document.querySelector('#logo'),playmode:'ff'});
+	getAll().logo.fps = 35;	
+	getAll().logo.start();
+
+	document.querySelectorAll('.accordion-arrow').forEach(arr=>{
+		const newArrow = new Animated({object:arr,toggle:true,fps:60,playmode:'rew'})
+		newArrow.object.parentElement.addEventListener('click',()=>newArrow.start())
+	})
 })

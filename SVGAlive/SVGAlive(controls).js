@@ -1,9 +1,22 @@
 
+export const animationsAll = {}
 
-
-
-
-
+export const getAll = () =>{
+	return animationsAll
+}
+export const createAnimated = (animation)=>{
+	let name = animation.object.id || animation.object.className;
+	for (const key in animationsAll) {
+			if (key === name) {
+				let prefix = 1;
+				while (animationsAll[name + "_" + prefix]) {
+					prefix++;
+				}
+				name += "_" + prefix;
+			};
+	};
+	animationsAll[name] = animation ;
+}
 export class Animated {
 	constructor({ object,min,max,fps,loopMode,playmode,loop,toggle })
 	{
@@ -29,7 +42,7 @@ export class Animated {
 
 		this.animationFrameId = null;
 		this.lastFrameTime = null;
-		
+		createAnimated(this)
 	}
 
 	setPlaymode() {
@@ -53,14 +66,23 @@ export class Animated {
 }
 
 	start() {
+		if(this.toggle){
+			this.previous = null;
+			if(this.playmode === 'ff'){
+				this.playmode = 'rew' 
+			}else{
+
+				this.playmode = 'ff' 
+			}
+			 
+			}
 		if (!this.isPlaying) {
 			this.isPlaying = true;
 			this.loop && this.loopMode !== 'pingpong' && (this.playmode = this.loopMode)
-			!this.loop && this.toggle && (this.playmode === 'ff' ? this.playmode = 'rew' : this.playmode = 'ff' )
 			if(!this.loop && !this.toggle){
 				this.frames[this.current].setAttribute('display','none')
 				this.playmode === 'ff'? this.current = this.min : this.current = this.max
-				}
+			 	}
 			this.draw()
 			
 			this.lastFrameTime = performance.now();
@@ -106,7 +128,6 @@ export class Animated {
 			case 'rew':
 				this.current = this.max;
 				break;
-
 			default:
 				break;
 		}
