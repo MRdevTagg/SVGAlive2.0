@@ -129,7 +129,7 @@ const createAnimated = (animation) => {
 export const createOne = (idOrClassName,options) => new Animated({ object : document.querySelector(idOrClassName), ...options });
 export const createMany = (className,options) => 	document.querySelectorAll(className).forEach(anim=> new Animated({object:anim, ...options }));
 
-export const getOne = (id) => getAll()[id]
+export const getOne = (name) => getAll()[name]
 export const getAll = () => animationsAll;
 export const getArray = (filter = null, cb) => {
   const arrayToReturn = [];
@@ -138,7 +138,7 @@ export const getArray = (filter = null, cb) => {
       ? key.includes(filter) && arrayToReturn.push(animationsAll[key])
       : arrayToReturn.push(animationsAll[key]);
   }
-  cb && arrayToReturn.map( anim => cb(anim))
+  cb && arrayToReturn.map( (anim,i,arr) => cb(anim,i,arr))
   return arrayToReturn;
 }
 
