@@ -3,7 +3,7 @@ export const $$ = el => document.querySelectorAll(el);
 export const tag = el => document.getElementsByTagName(el);
 
 
-export const animationsAll = {};
+export const instances = {};
 export class Animated {
   constructor({ object,trigger, min, max, fps, loopMode, playmode, loop, toggle }) {
 //related DOMElements
@@ -18,7 +18,7 @@ export class Animated {
     this.loopMode = loopMode || "pingpong";
 //Frames and timing related
     this.frames = [...this.parent.querySelectorAll("svg")];
-    this.fps = (fps < 60 && fps) || 60;
+    this.fps = (fps < 120 && fps) || 120;
     this.min = (min >= 0 && min) || 0;
     this.max = (max <= this.frames.length - 1 && max) || this.frames.length - 1;
     this.isPlaying = false;
@@ -47,11 +47,12 @@ export class Animated {
   }
   setLoop() {
      const mode = {
-      ff : () => (this.current = this.min),
+      ff : () => this.current = this.min,
       pingpong : () => {
+        this.previous = null
         this.toggle()
       },
-      rew : () => (this.current = this.max),
+      rew : () => this.current = this.max,
     };
 		return mode[this.loopMode] && mode[this.loopMode]()
   }
@@ -79,12 +80,12 @@ export class Animated {
     }
   }
   setLoopMode( loopmode ) {
-    loopmode && (this.loopmode = loopmode);
-
+    loopmode && (this.loopMode = loopmode);
+    this.loop && this.loopMode !== "pingpong" && this.toggleOn ? (this.loopMode = this.playmode):(this.playmode = this.loopMode);
     if(this.firstPlay){
       this.frames[this.current]?.setAttribute("display", "none");
-      this.loopmode === "ff" && (this.current = this.min);
-      this.loopmode === "rew" && (this.current = this.max);
+      this.loopMode === "ff" && (this.current = this.min);
+      this.loopMode === "rew" && (this.current = this.max);
       this.draw();
     }
   }
@@ -107,7 +108,7 @@ export class Animated {
       this.firstPlay = false;
   }
   fixedUpdate(){
- this.loop && this.loopMode !== "pingpong" && (this.playmode = this.loopMode);
+    this.loop && this.loopMode !== "pingpong" && this.toggleOn ? (this.loopMode = this.playmode):(this.playmode = this.loopMode);
   }
   animate() {
     if (!this.isPlaying) return;
@@ -115,7 +116,6 @@ export class Animated {
       (performance.now() - this.lastFrameTime) / (1000 / this.fps)
     );
     this.fixedUpdate()
-
     this.update(framesToDraw);
 
     this.frameID = requestAnimationFrame(this.animate.bind(this));
@@ -146,7 +146,7 @@ export class Animated {
   }
   toggle(){
     if(!this.firstPlay){
-      !this.isPlaying || this.loop && !this.reachEnd() || !this.reachStart() && (this.previous = null);
+      !this.isPlaying || (this.loop && !this.reachEnd() || !this.reachStart()) && (this.previous = null);
       this.current === this.min && (this.playmode = 'ff');
       this.current === this.max && (this.playmode = 'rew');
       this.playmode === "ff" ? this.playmode = "rew" : this.playmode = "ff";
@@ -175,10 +175,10 @@ const fltr = getArray().filter((anim) =>  obj === anim.object)
 const getValidName = (animation)=> {
   const validName = animation.object.getAttribute('data').split('/').pop().split('.').slice(0, -1).join('.').replace(/[^a-zA-Z0-9_]/g, '_');
   let finalName = validName;
-  for (const key in animationsAll) {
+  for (const key in instances) {
     if (key === validName) {
       let prefix = 1;
-      while (animationsAll[`${validName}_${prefix}`]) {
+      while (instances[`${validName}_${prefix}`]) {
         prefix++;
       }
       finalName = `${validName}_${prefix}`;
@@ -190,7 +190,7 @@ const getValidName = (animation)=> {
 const declare = (animation) => {
   let finalName = getValidName(animation);
   animation.name = finalName
-  animationsAll[finalName] = animation;
+  instances[finalName] = animation;
 };
 
 export const setOneDOM = (obj,options) => evaluate( obj, options );
@@ -199,13 +199,13 @@ export const setOne = (idOrClassName,options) => evaluate($(idOrClassName), opti
 export const setMany = (className,options) => $$(className).forEach( anim => evaluate(anim,options));
 
 export const getByObject = (obj)=> getArray().filter( anim => anim.object === obj )[0]
-export const getThem = (name = null) => !name ? animationsAll : animationsAll[name];
+export const getThem = (name = null) => !name ? instances : instances[name];
 export const getArray = (filter = null, cb) => {
   const arrayToReturn = [];
-  for (const key in animationsAll) {
+  for (const key in instances) {
     filter
-      ? key.includes(filter) && arrayToReturn.push(animationsAll[key])
-      : arrayToReturn.push(animationsAll[key]);
+      ? key.includes(filter) && arrayToReturn.push(instances[key])
+      : arrayToReturn.push(instances[key]);
   }
   cb && arrayToReturn.map( (anim,i,arr) => cb(anim,i,arr))
   return arrayToReturn;
