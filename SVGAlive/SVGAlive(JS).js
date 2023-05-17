@@ -4,17 +4,19 @@
 import { setMany, getThem, getArray, setOne,} from "./SVGAlive(controls).js";
 window.addEventListener("load", ()=> {
 
-	setMany(".your-id",{ fps:5,loop:true });
-	setOne('.other-id',{fps:5})
+	setMany(".your-id",{ fps:45,loop:true });
+	setOne('.other-id',{fps:35})
 	const { example, example_1, loo} = getThem()
 
-	example.addTriggers([document.querySelector('body')])
-
+	example.addTriggers([document.querySelector('body')]).setLoop('rew').start()
 	example_1.loop = false
-	loo.setLoopMode('ff')
-	loo.start({loop:true})
+	
+	loo.setLoop('ff').start()
+	
 
-	getArray("example", (anim) => anim.outEvent( "click", ()=> anim.start({toggle:true}), 0 ))[0].start({});
+	getArray("example", (anim) => anim.outEvent( "click", ()=> anim.toggle(true), 0 ));
+
+
 	const preloader = document.querySelector('.preload')
 	preloader.style.opacity = 0
 	setTimeout( ()=> preloader.style['display'] = 'none', 1000 )
