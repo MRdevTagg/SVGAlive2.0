@@ -1,15 +1,15 @@
 /* eslint-disable  */
 import React, { useEffect, useRef } from 'react';
-import { Animated, setSize } from './SVGAlive(controls)';
+import { Animated } from './SVGAlive(controls)';
 
-export const SVGAlive = ({ name, controls, w, h, play }) => {
+export const SVGAlive = ({ name, controls, play }) => {
 	const obj = useRef(null);
-	const animRef = useRef(null);
+	const anim = useRef(null);
 	const changeProp = (prop, value) => {
-		if (!animRef.current) return;
-		typeof animRef.current[prop] === 'boolean' && !value ?
-		animRef.current[prop] = !animRef.current[prop] :
-		animRef.current[prop] = value
+		if (!anim.current) return;
+		typeof anim.current[prop] === 'boolean' && !value ?
+		anim.current[prop] = !anim.current[prop] :
+		anim.current[prop] = value
 
 	};
 	const changeControls = () => {
@@ -18,10 +18,10 @@ export const SVGAlive = ({ name, controls, w, h, play }) => {
 			if (key === 'max' || key === 'min'){
 				switch (key) {
 					case 'min':
-					animRef.current.current >= val && changeProp(key, val);
+					anim.current.current >= val && changeProp(key, val);
 						break;
 					case 'max':
-					animRef.current.current <= val && changeProp(key, val);
+					anim.current.current <= val && changeProp(key, val);
 					break;
 					default:
 						break;
@@ -32,19 +32,18 @@ export const SVGAlive = ({ name, controls, w, h, play }) => {
 	};
 	const handleClick = (e) => {
 		e.preventDefault();
-		animRef.current && animRef.current.start();
+		anim.current && anim.current.start({});
 	};
 	const init = () => {
-		animRef.current = new Animated({object: obj.current});
-		const {current} = animRef;
-		w && setSize(current.parent, current.frames, w , h )
+		anim.current = new Animated({object: obj.current});
+		const {current} = anim;
 		current && controls && changeControls(controls)
-		current && play && current.start()
+		current && play && current.start({})
 		current && current.parent.addEventListener('click', handleClick);
 	};
 	useEffect(() => {
 		return () => {
-			const {current} = animRef;
+			const {current} = anim;
 			current && current.parent.removeEventListener('click', handleClick);
 		};
 	}, []);

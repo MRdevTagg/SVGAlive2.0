@@ -6,18 +6,30 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Document</title>
 	<style>
-    /* Set the font family and background color */
-    body {
+    html,body {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
       font-family: 'Segoe UI', Arial, sans-serif;
-      background-color: #f6f8fa;
+      background-color: #aab;
     }
+		.preload{
+			width:100%;
+			height:100%;
+			background:#334;
+			transition: opacity 1s;
+			position: absolute;
+		}
   </style>
+	<script>
+	</script>
 </head>
 <body>
 
-
+<div class="preload"></div>
 	<h1>SVGAlive HTML example</h1>
-	<object id="your-id" data="SVGAlive/sources/holi.svg" type="image/svg+xml"></object>
+	<object class="your-id" data="SVGAlive/sources/example.svg" type="image/svg+xml"></object>
+	<object class="your-id" data="SVGAlive/sources/example.svg" type="image/svg+xml"></object>
 	<script src="SVGAlive/SVGAlive(JS).js" type="module"></script>
 </body>
 </html>

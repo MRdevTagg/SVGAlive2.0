@@ -44,33 +44,51 @@ Using vite or React you don’t have any issues of this type.
     <object id="your-anim-id" data="../SVGAlive/your-animation-name.svg" type="image/svg+xml"></object>
 ```
 
-**In Javascript:**
-NOTES: if you created the Animated instance using createMany() method, the names will be incremented with the
-prefix 'your-svg-name, your-svg-name_1, your-svg-name_2, ...', corresponding to the order you created them.
-The size of the image will be relative to the object width or height mantaining its aspect ratio
+## JAVASCRIPT ##
+
+### **NOTES:** ###
+
+- ***not-same-instance*** If you point to a &lt;object&gt; that's alredy referenced into an existing Animated instance, the instance
+will not be created and an Error will be shown in de console with the details
+- ***names*** The name for the Animated instance will be taken from the svg file
+- ***prefix*** If you created the Animated instance the same svg source, the name will be incremented with the
+  following prefix 'your-svg-name, your-svg-name_1, your-svg-name_2, ...', corresponding to the order you created them.
+- ***size*** The size of the image will be relative to the object width or height mantaining its aspect ratio
 
 - Create all Animated instances before you access them using the following methods:
 
-`createOne()` :
+ `createOne()` :
    Create single Animated instance from id or className given to the object,
   @param id(string):  (mandatory) it must contain the id or className from the object you want to add to an Animated instance
   @param options(object): (optional) an object that must contain valid properties and values from the Animated class
 
 - `createMany()` :
    Create many Animated instances from a className given to more than one object
-  @param id(string): this argument is mandatory, it must contain className from the objects you want to add to an Animated instance
-  @param options(object): this is an optional argument, an object that must contain valid properties and values from the Animated class
+   . @param id(string): this argument is mandatory, it must contain className from
+  the objects you want to add to an Animated instance
+   . @param options(object): this is an optional argument, an object that must contain valid properties and values from the Animated class
 
-Access Animations using the following methods:
+ `createOneDOM()` :
+   Create single Animated instance from a reference to the object tag
+   . @param selector(string):  (mandatory) it must contain the reference the object
+   you want to add to an Animated instance
+   . @param options(object): (optional) an object that must contain valid
+   properties and values from the Animated class
 
-- `getOne()`:
- get a single Animated instance, it takes a string param that must be equal to the svg file name, if you created
- the Animated instance using the createMany() method you must keep in mind the prefix increment explained in NOTES above
-  
-- `getAll()` :
- returns an object that contains all Animated instances created to this point, the keys are equal to the svg file name
- with the prefix(if there is more than one with the same name),
- you can destructure it and rename the Animated's references at your convenience
+- `createManyDOM()` :
+   Create many Animated instances from a className given to more than one object
+  @param id(string): this argument is mandatory, it must contain a node list(o Array)
+  from the objects you want to add to an Animated instance
+  @param options(object): this is an optional argument, an object that must contain
+  valid properties and values from the Animated class
+
+#### Access Animations using the following methods ####
+
+- `getThem()`:
+ get a single Animated instance, it takes a string param that must be equal to the svg file name,
+  i you don't pass the name it will return an object with al the Animateds instantiated at the time,
+ if you created the Animated instance using the createMany() method you must keep in mind
+ the prefix increment explained in NOTES above
 
 - `getArray()` :
  get an array from all Animated instances created to this point, this method has two optional params: filter and cb
@@ -78,7 +96,9 @@ Access Animations using the following methods:
  @param cb(function): you can set a callback function to execute for all animations, you must pass an argument to
  reference each Animated instances, also you can get the index and all the array from the second and third, parameter
 
-In the following example lets supose we have six diferent svg animations files: logo.svg, icon-home.svg, icon-contact.svg, icon-about.svg, icon-services.svg, icon-feedback.svg, and also we have a svg file that we're going to use many times: plus.svg. All of this inside a header tag will look like this:
+In the following example lets supose we have six diferent svg animations files: logo.svg, icon-home.svg, icon-contact.svg,
+ icon-about.svg, icon-services.svg, icon-feedback.svg,
+ and also we have a svg file that we're going to use many times: plus.svg. All of this inside a header tag will look like this:
 
 ### HTML ###
 
@@ -104,20 +124,20 @@ In the following example lets supose we have six diferent svg animations files: 
 ### Javascript ###
 
 ```javascript
-import { createOne, createMany, getOne, getAll, getArray } from "./SVGAlive(controls).js";
+import { createOne, createMany, getThem, getAll, getArray } from "./SVGAlive(controls).js";
 window.addEventListener("load", () => {
-// createOne() and createMany() act as querySelector() and querySelectorAll() (look at the string we pass to it)
+// note that createOne() and createMany() we must pass the id or classNames gived to the object/objects
 // Create a single Animated instance and set its framerate to 35 fps
 createOne("#logoID",{ fps:35, loop:true });
 // Create many Animated instances and set their framerate to 60 fps and its playmode to rew
 createMany(".icons", { fps: 60, playmode: "rew" });
 createMany('.pluses', { loop:true })
 
-// Get Animated instance of logo ant the instance of icon-home and start the animation using getOne method 
+// Get Animated instance of logo ant the instance of icon-home and start the animation using getThem method 
 // (note that we pass the name of the svg file, and also that every invalid character for variable declaration
 // would be replaced by '_')
- getOne("logo").start({loop:true});
- getOne('icon_home').start({})
+ getThem("logo").start({loop:true});
+ getThem('icon_home').start({})
 
 // we could also get the same result destructuring the object returned by getAll() method
  const { logo, icon_home, icon_contact } = getAll();
@@ -137,9 +157,9 @@ getArray('icon', (icon) =>icon.start({}))
 getArray('icon', (anim) => anim.object.parentElement.addEventListener("click", () => anim.start({ toggle: true })));
 
 // Now if we have different Animated instances with the same svg file name like the plus.svg example we could do:
-getOne('plus').start({});
-getOne('plus_1').start({});
-getOne('plus_2').start({});
+getThem('plus').start({});
+getThem('plus_1').start({});
+getThem('plus_2').start({});
 
 // or we could use destructuring again (note i renamed plus_2)
 const { plus, plus_1, plus_2 : p2 } = getAll();
@@ -156,12 +176,12 @@ getArray('plus')[2].start({})
 // if we want to add a listener to the Animated instance of plus_2 itself we could do:
 p2.parent.addEventListener('click', () => p2.start({ toggle: true }))
 //or
-getOne('plus_2').parent.addEventListener('click', () => getOne('plus_2').start({ toggle: true }))
+getThem('plus_2').parent.addEventListener('click', () => getThem('plus_2').start({ toggle: true }))
 
 // this is just an example just to cover all the different ways to create, access and manimpulate the animations
 // we can use this in every scope we are, add conditions or whatever, if the animation is alredy created :
 const body = document.querySelector('body')
-body.addEventListener('scroll', ()=> getOne('logo').start({loop:true,fps: body.offsetTop / 10 }))
+body.addEventListener('scroll', ()=> getThem('logo').start({loop:true,fps: body.offsetTop / 10 }))
 
 });
 ```
