@@ -108,7 +108,7 @@ export class Animated {
       this.firstPlay = false;
   }
   fixedUpdate(){
-    this.loop && this.loopMode !== "pingpong" && this.toggleOn ? (this.loopMode = this.playmode):(this.playmode = this.loopMode);
+    this.loop && this.loopMode !== "pingpong" && (this.loopMode = this.playmode);
   }
   animate() {
     if (!this.isPlaying) return;
@@ -116,6 +116,7 @@ export class Animated {
       (performance.now() - this.lastFrameTime) / (1000 / this.fps)
     );
     this.fixedUpdate()
+
     this.update(framesToDraw);
 
     this.frameID = requestAnimationFrame(this.animate.bind(this));

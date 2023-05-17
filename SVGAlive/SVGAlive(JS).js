@@ -4,7 +4,7 @@
 import { setMany, getThem, getArray, setOne,} from "./SVGAlive(controls).js";
 window.addEventListener("load", ()=> {
 
-	setMany(".your-id",{ fps:100,loop:true });
+	setMany(".your-id",{ fps:30,loop:true });
 	setOne('.other-id',{fps:15})
 	const { example, example_1, loo} = getThem()
 
@@ -12,8 +12,6 @@ window.addEventListener("load", ()=> {
 	example.setLoopMode('rew')
 
 	example_1.loop = false
-
-	example_1.setLoopMode('rew')
 	loo.setLoopMode('ff')
 	loo.start({loop:true})
 
