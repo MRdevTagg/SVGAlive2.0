@@ -4,12 +4,12 @@
 import { setMany, getThem, getArray, setOne,} from "./SVGAlive(controls).js";
 window.addEventListener("load", ()=> {
 
-	setMany(".your-id",{ fps:45,loop:true });
+	setMany(".your-id",{fps:45,playmode:'sdfsdfsdf'});
 	setOne('.other-id',{fps:35})
 	const { example, example_1, loo} = getThem()
 
-	example.addTriggers([document.querySelector('body')]).setLoop('rew').start()
-	example_1.loop = false
+	example.addTriggers([document.querySelector('body')]).setLoop('pingpong').start()
+	
 	
 	loo.setLoop('ff').start()
 	

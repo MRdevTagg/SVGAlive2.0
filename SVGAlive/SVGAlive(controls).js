@@ -1,7 +1,20 @@
 export const $ = el => document.querySelector(el);
 export const $$ = el => document.querySelectorAll(el);
 export const tag = el => document.getElementsByTagName(el);
-
+const valid = (prop,validProps,propName) => {
+ if(prop)
+ { const filter = validProps.filter( (validProp) => validProp === prop );
+  if (filter.length === 0){ 
+   console.error(`setted to default :
+"${prop}" is an invalid prop
+you must pass ${JSON.stringify(validProps).split(',').join(` or `).replace('[','').replace(']','')} as "${propName}" value`);
+   return null
+  }
+  else return prop;
+}
+}
+const validPlaymode = (mode)=> valid(mode,['ff','rew'],'playmode');
+const validLoopmode = (mode)=> valid(mode,['ff','rew','pingpong'],'loopmode');
 
 export const instances = {};
 export class Animated {
@@ -12,31 +25,36 @@ export class Animated {
   #current = 0;
   #previous = null;
   #direction = 1;
+  #triggers;
   #condition = () => this.#current <= this.max;
-  #reachStart = () => this.#current >= this.min;
-  #reachEnd = () => this.#current <= this.max;
+  #atStart = () => this.#current >= this.min;
+  #atEnd = () => this.#current <= this.max;
   #reachPoint = (frame) => this.#current === frame;
   #frameID = null;
   #lastFrameTime = null;
-
-  constructor({ object, trigger, min, max, fps, loop }) {
+  #mode;
+  #loop;
+  constructor({ object, triggers, min, max, fps, loop, loopmode, playmode, initialFrame }) {
 //related DOMElements
     this.name;
     this.object = object;
     this.parent = object.contentDocument.querySelector(`svg`);
-    this.trigger = trigger || [this.parent]
+    this.#triggers = triggers || [this.parent]
 //playmodes and loopmodes   
     this.loop = loop || false;
-    
+    this.#loopMode = validLoopmode(loopmode)
+    this.#playmode = validPlaymode(playmode)
 //Frames and timing related
     this.frames = [...this.parent.querySelectorAll("svg")];
     this.fps = (fps < 120 && fps) || 120;
     this.min = (min >= 0 && min) || 0;
     this.max = (max <= this.frames.length - 1 && max) || this.frames.length - 1;
     this.skip = false;
+    this.#mode = ()=> this.loop && this.#loopMode !== 'pingpong' ? this.#loopMode : this.#playmode;
+    this.#current = initialFrame || this.#mode === 'ff' ? this.min : this.max;
 
     declare(this);
-    this.#awake();
+    this.#awake(initialFrame);
   }
   // PRIVATE METHODS
 
@@ -55,22 +73,21 @@ export class Animated {
   const mode = {
   "ff":()=>{
         this.#direction = 1;
-        this.#condition = () => this.#reachEnd();
+        this.#condition = () => this.#atEnd();
 	},
    "rew":()=>{
         this.#direction = -1;
-        this.#condition = () => this.#reachStart();
+        this.#condition = () => this.#atStart();
 	}
     }
 		return mode[this.#playmode] && mode[this.#playmode]()
   }
-  #awake() {
-    const mode = this.loop ? 'loopMode' : 'playmode'
-    this.frames[this.#current]?.setAttribute("display", "none");
-    this[mode] === "ff" && (this.#current = this.min);
-    this[mode] === "rew" && (this.#current = this.max);
-    this.#draw();
-    console.log( `${this.name} awake`)
+  #awake(initial) {
+    if(!initial || initial < this.max && initial > this.min){
+      this.#mode === 'ff' ? this.#current = this.min : this.#current = this.max;
+    } 
+    this.frames[this.#current]?.setAttribute("display", "initial");
+    console.log( `${this.name} is awake on ${this.#mode()}`)
   }
   #fixedUpdate(){
     this.loop && this.#loopMode !== "pingpong" && this.setPlay(this.#loopMode);
@@ -110,6 +127,7 @@ export class Animated {
   start() {
 
     if (!this.#isPlaying) {
+
       this.#firstPlay  && (this.#firstPlay = false);
       this.#isPlaying = true;
       this.#lastFrameTime = performance.now();
@@ -117,6 +135,7 @@ export class Animated {
     }
     return this
   }
+
   stop() {
     if(this.#isPlaying){
       cancelAnimationFrame(this.#frameID);
@@ -128,34 +147,33 @@ export class Animated {
   }
   toggle(on = null){
     if(!this.#firstPlay){
-      !this.#isPlaying || (!this.#reachEnd() || !this.#reachStart()) && (this.#previous = null)
+      !this.#isPlaying || (!this.#atEnd() || !this.#atStart()) && (this.#previous = null)
       !this.loop || this.#loopMode === 'pingpong' ? 
         this.#playmode === "ff" ? this.setPlay("rew") : this.setPlay("ff") :
         this.#loopMode === "ff" ? this.setLoop("rew") : this.setLoop("ff") ;
     }
-    on && !this.#isPlaying && this.start()
+    on && this.start()
     return this
   }
   setPlay( playmode ) {
-    playmode && (this.#playmode = playmode);
+    validPlaymode(playmode) && (this.#playmode = playmode);
     this.#setCondition()
     return this
   }
   setLoop( loopmode ) {
     !this.loop && (this.loop = true)
-    loopmode && (this.#loopMode = loopmode);
+    validLoopmode(loopmode) && (this.#loopMode = loopmode);
     this.#loopMode !== "pingpong" && this.setPlay(loopmode);
     this.#setCondition()
     return this
   }
   addTriggers(triggers){
-    this.trigger = [...this.trigger, ...triggers]
+    this.#triggers = [...this.#triggers, ...triggers]
     return this
   }
   outEvent(event,cb,triggerIndex){
-    this.trigger[triggerIndex].addEventListener(event,cb)
+    this.#triggers[triggerIndex].addEventListener(event,cb)
   }
-
   
 }
 
@@ -196,10 +214,10 @@ const getValidName = (animation)=> {
   animation.name = finalName;
   return finalName;
 }
-const declare = (animation) => {
-  let finalName = getValidName(animation);
-  animation.name = finalName
-  instances[finalName] = animation;
+const declare = (instance) => {
+  let finalName = getValidName(instance);
+  instance.name = finalName
+  instances[instance.name] = instance;
 };
 
 export const setOneDOM = (obj,options) => evaluate( obj, options );

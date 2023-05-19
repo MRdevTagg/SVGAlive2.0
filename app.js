@@ -9,8 +9,72 @@ const { JSDOM } = require('jsdom');
 const glob = require('glob');
 let filepathString =''
 
+const attrs = [
+  'clip-path',
+  'filter',
+  'mask',
+  'fill',
+  'stroke',
+  'marker-start',
+  'marker-mid',
+  'marker-end',
+  'xlink:href',
+  'href',
+  'begin',
+  'end',
+  'from',
+  'to',
+  'by',
+  'values',
+  'in',
+  'in2',
+  'result',
+  'patternContentUnits',
+  'patternUnits',
+  'gradientUnits',
+  'spreadMethod',
+  'gradientTransform',
+  'xlink:arcrole',
+  'xlink:role',
+  'xlink:title',
+  'xlink:show',
+  'xlink:actuate',
+  'xlink:type',
+  'xlink:hreflang',
+  'xlink:group',
+  'xlink:space',
+  'xlink:availability',
+  'xlink:controlledBy',
+  'xlink:controller',
+  'xlink:dateTime',
+  'xlink:enter',
+  'xlink:exit',
+  'xlink:label',
+  'xlink:parent',
+  'xlink:path',
+  'xlink:port',
+  'xlink:server',
+  'xlink:signature',
+  'xlink:verifier'
+];
+const c = {
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  yellow: '\x1b[33m',
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+  underline: '\x1b[4m',
+  blink: '\x1b[5m',
+  invert: '\x1b[7m'
+};
+
+
 function setSize(parent, frames) {
-  console.log('\x1b[34m...fixing sizes')
+  console.log(c.cyan+'...fixing sizes')
   parent.setAttribute('width', frames[0].getAttribute('width'));
   parent.setAttribute('height', frames[0].getAttribute('height'));
   parent.style.width = '100%';
@@ -26,11 +90,17 @@ function setSize(parent, frames) {
 
 }
 function idMatch(el, oldID, newID, attr) {
-  if (el.getAttribute(attr) === oldID) {
-    el.setAttribute(attr, newID);
+  const attrValue = el.getAttribute(attr);
+  if (attrValue) {
+    const isUrlFormat = attrValue.startsWith('url(') && attrValue.endsWith(')');
+    const extractedID = isUrlFormat ? attrValue.slice(4, -1) : attrValue;
+
+    if (extractedID === oldID) {
+      const newAttrValue = isUrlFormat ? `url(${newID})` : newID ;
+      el.setAttribute(attr, newAttrValue);
+    }
   }
 }
-
 async function fixIDs(frame, i) {
   frame.setAttribute('id', `frame_${i + 1}`);
   const childs = frame.querySelectorAll('*');
@@ -40,14 +110,12 @@ async function fixIDs(frame, i) {
     oldID = id.id;
     newID = `${id.id + '_' + i + '_' + j}`;
     id.id !== '' && id.setAttribute('id', newID);
-    childs.forEach(ch => {
-      idMatch(ch, `#${oldID}`, `#${newID}`, 'xlink:href');
-      idMatch(ch, `url(#${oldID})`, `url(#${newID})`, 'fill');
-      idMatch(ch, `url(#${oldID})`, `url(#${newID})`, 'filter');
+    childs.forEach(child => {
+      attrs.forEach(attr => 
+      idMatch(child, `#${oldID}`, `#${newID}`, attr))
     });
   });
 }
-
 async function waitForFileToExist(filePath) {
   // Check if the file exists
   if (fs.existsSync(filePath)) {
@@ -64,17 +132,17 @@ function getAvailableFilename(filepath, filename) {
   while (fs.existsSync(filepath + filename)) {
     index++;
     const extension = filename.slice(filename.lastIndexOf('.'));
-    const basename = filename.slice(0, filename.lastIndexOf('.'));
+    const basename = filename.slice(0, filename.includes('(') ? filename.lastIndexOf('(') : filename.lastIndexOf('.'));
     filename = `${basename}(${index})${extension}`;
   }
   
   return filename;
 }
 
-async function Init({ filePath, w = null, }) {
-  console.log('  \x1b[31mDONT CLOSE!')
-  console.log(`\x1b[34m...Compiling files`)
-  console.log(`\x1b[34m...Generating svg file to \x1b[35m${filePath}`)
+async function Init({ filePath }) {
+  console.log(` ${c.bold+c.red}DONT CLOSE!${c.reset}
+  ${c.cyan}...Compiling files
+  ...Generating svg file to ${c.magenta}${filePath}`)
   await waitForFileToExist(filePath);
   
   const file = fs.readFileSync(filePath, 'utf-8');
@@ -82,25 +150,24 @@ async function Init({ filePath, w = null, }) {
   const parent = document.querySelector('svg');
   const frames = Array.from(document.querySelectorAll('svg > svg'));
  
-console.log('\x1b[34m...Resolving ID conflicts')
-console.log(' ')
 
-setSize(parent,frames)
+
+  setSize(parent,frames)
+  console.log(`${c.cyan}...Resolving ID conflicts`)
+  
   frames.forEach((frame, i) => {
     fixIDs(frame, i);
-    if (i !== 0) {
-      frame.setAttribute('display', 'none');
-    }
+    frame.setAttribute('display', 'none');
   });
 
   const output = parent.outerHTML;
   fs.writeFileSync(filePath, output);
   console.log(`
-  \x1b[32mCOMPLETED! 
-  \x1b[37mYour \x1b[3mSVGAlive \x1b[37m are now compiled in \x1b[35m${filePath}
+  ${c.bold+c.green}COMPLETED! 
+  ${c.reset}Your ${c.bold+c.cyan}SVGAlive ${c.reset} are now compiled in ${c.magenta+filePath}
           `);
   rl.question(`
--- \x1b[33mClose session Y/N? \x1b[37m (default N) : 
+-- ${c.yellow}Close session Y/N? ${c.reset} (default N) : 
 `, (close = 'n') => {
     close.toLowerCase() !== 'y' && (close = 'n');
     close.toLowerCase() === 'n' ? createAnimation() : rl.close();
