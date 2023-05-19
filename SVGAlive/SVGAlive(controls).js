@@ -42,16 +42,16 @@ export class Animated {
     this.#triggers = triggers || [this.parent]
 //playmodes and loopmodes   
     this.loop = loop || false;
-    this.#loopMode = validLoopmode(loopmode)
-    this.#playmode = validPlaymode(playmode)
+    this.#loopMode = validLoopmode(loopmode) || 'ff'
+    this.#playmode = validPlaymode(playmode) || 'ff'
 //Frames and timing related
     this.frames = [...this.parent.querySelectorAll("svg")];
     this.fps = (fps < 120 && fps) || 120;
     this.min = (min >= 0 && min) || 0;
     this.max = (max <= this.frames.length - 1 && max) || this.frames.length - 1;
     this.skip = false;
-    this.#mode = ()=> this.loop && this.#loopMode !== 'pingpong' ? this.#loopMode : this.#playmode;
-    this.#current = initialFrame || this.#mode === 'ff' ? this.min : this.max;
+    this.#mode = this.loop && this.#loopMode !== 'pingpong' ? this.#loopMode : this.#playmode;
+    this.#current = initialFrame
 
     declare(this);
     this.#awake(initialFrame);
@@ -83,11 +83,11 @@ export class Animated {
 		return mode[this.#playmode] && mode[this.#playmode]()
   }
   #awake(initial) {
-    if(!initial || initial < this.max && initial > this.min){
+    if(!initial || initial > this.max || initial < this.min){
       this.#mode === 'ff' ? this.#current = this.min : this.#current = this.max;
     } 
     this.frames[this.#current]?.setAttribute("display", "initial");
-    console.log( `${this.name} is awake on ${this.#mode()}`)
+    console.log( `${this.name} is awake on "${this.#mode}" mode al frame ${this.#current}`)
   }
   #fixedUpdate(){
     this.loop && this.#loopMode !== "pingpong" && this.setPlay(this.#loopMode);
