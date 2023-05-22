@@ -1,24 +1,21 @@
 /* eslint-disable  */
 // USE GUIDE:
 
-import { setMany, getThem, getArray, setOne,} from "./SVGAlive(controls).js";
+import { setMany, getThem, getArray, $,} from "./SVGAlive(controls).js";
 window.addEventListener("load", ()=> {
 
-	setMany(".your-id",{fps:45,playmode:'rew', initialFrame : 90});
-	setOne('.other-id',{fps:35})
-	const { example, example_1, loo} = getThem()
+	setMany(".your-id",{ fps: 25, playmode: 'rew',name:'arrow'});
+	setMany('.cube',{ fps: 45, playmode: 'rew',initialFrame : 15, name:'cosa'},)
+	const { arrow,arrow_1 } = getThem()
 
-	example.addTriggers([document.querySelector('body')]).setLoop('pingpong').start()
-	
-	
-	loo.setLoop('ff').start()
-	
+	arrow.addTriggers([$('body')]).setLoop('pingpong').start()
+	arrow_1.beforeDraw = (arr) => {
+		!arr.firstPlay && arr.reach(5) && console.log(`${arr.getName()} reached frame ${arr.getCurrent()}`)
+	}
+	getArray('cosa', (anim,i) => anim.outEvent('mouseenter',()=> anim.toggle(true).setFPS(70) ,0))[0].setLoop('rew').start().fps = 50
 
-	getArray("example", (anim) => anim.outEvent( "click", ()=> anim.toggle(true), 0 ));
+	getArray("arrow", (anim) => anim.outEvent( "click", ()=> anim.toggle(true), 0 ));
 
+console.log(getThem())
 
-	const preloader = document.querySelector('.preload')
-	preloader.style.opacity = 0
-	setTimeout( ()=> preloader.style['display'] = 'none', 1000 )
-	console.log(getThem())
 });

@@ -9,6 +9,7 @@ const { JSDOM } = require('jsdom');
 const glob = require('glob');
 let filepathString =''
 
+let fixedids = 0;
 const attrs = [
   'clip-path',
   'filter',
@@ -74,9 +75,11 @@ const c = {
 
 
 function setSize(parent, frames) {
-  console.log(c.cyan+'...fixing sizes')
+  console.log(c.cyan + '...fixing sizes');
   parent.setAttribute('width', frames[0].getAttribute('width'));
   parent.setAttribute('height', frames[0].getAttribute('height'));
+  parent.setAttribute('viewBox', `0 0 ${frames[0].getAttribute('width')} ${frames[0].getAttribute('height')}`);
+  parent.setAttribute('preserveAspectRatio', 'xMinYMin meet');
   parent.style.width = '100%';
   parent.style.height = 'auto';
   frames.forEach((frame) => {
@@ -87,7 +90,6 @@ function setSize(parent, frames) {
     frame.removeAttribute('width');
     frame.removeAttribute('height');
   });
-
 }
 function idMatch(el, oldID, newID, attr) {
   const attrValue = el.getAttribute(attr);
@@ -96,6 +98,7 @@ function idMatch(el, oldID, newID, attr) {
     const extractedID = isUrlFormat ? attrValue.slice(4, -1) : attrValue;
 
     if (extractedID === oldID) {
+      fixedids += 1;
       const newAttrValue = isUrlFormat ? `url(${newID})` : newID ;
       el.setAttribute(attr, newAttrValue);
     }
@@ -141,10 +144,10 @@ function getAvailableFilename(filepath, filename) {
 
 async function Init({ filePath }) {
   console.log(` ${c.bold+c.red}DONT CLOSE!${c.reset}
-  ${c.cyan}...Compiling files
-  ...Generating svg file to ${c.magenta}${filePath}`)
+${c.cyan}...Compiling files
+...Generating svg file to ${c.magenta}${filePath}`)
   await waitForFileToExist(filePath);
-  
+  console.log(`${c.cyan}...Re-opening file to fix`)
   const file = fs.readFileSync(filePath, 'utf-8');
   const { document } = new JSDOM(file).window;
   const parent = document.querySelector('svg');
@@ -153,7 +156,9 @@ async function Init({ filePath }) {
 
 
   setSize(parent,frames)
-  console.log(`${c.cyan}...Resolving ID conflicts`)
+
+  console.log(`${c.cyan}...Making svg responsive
+...Resolving ID conflicts`)
   
   frames.forEach((frame, i) => {
     fixIDs(frame, i);
@@ -164,8 +169,11 @@ async function Init({ filePath }) {
   fs.writeFileSync(filePath, output);
   console.log(`
   ${c.bold+c.green}COMPLETED! 
-  ${c.reset}Your ${c.bold+c.cyan}SVGAlive ${c.reset} are now compiled in ${c.magenta+filePath}
-          `);
+  ${c.reset}Your ${c.bold+c.cyan}SVGAlive ${c.reset}.svg file are now ready to use in ${c.magenta+filePath}
+  ${c.yellow}Total compiled frames: ${frames.length}
+  ${c.yellow}Total IDs fixed: ${fixedids}
+         `);
+  fixedids = 0
   rl.question(`
 -- ${c.yellow}Close session Y/N? ${c.reset} (default N) : 
 `, (close = 'n') => {
@@ -200,12 +208,7 @@ function createSVG({ sources, output, destiny}) {
     .pipe(gulp.dest(destiny))
 }
 
-function createScript({ sources, output, destiny }) {
-  return gulp
-    .src(sources)
-    .pipe(concat(output))
-    .pipe(gulp.dest(destiny))
-}
+
 
 async function createAnimation() {
   console.log(`\x1b[36m \x1b[2mSVGALive! \x1b[37mNEW OPERATION:`)

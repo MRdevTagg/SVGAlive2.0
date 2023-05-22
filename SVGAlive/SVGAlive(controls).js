@@ -21,41 +21,52 @@ export class Animated {
   #playmode = "ff";
   #loopMode = "pingpong";
   #isPlaying = false;
-  #firstPlay = true;
+  firstPlay = true;
   #current = 0;
   #previous = null;
   #direction = 1;
   #triggers;
-  #condition = () => this.#current <= this.max;
-  #atStart = () => this.#current >= this.min;
-  #atEnd = () => this.#current <= this.max;
-  #reachPoint = (frame) => this.#current === frame;
   #frameID = null;
   #lastFrameTime = null;
   #mode;
   #loop;
-  constructor({ object, triggers, min, max, fps, loop, loopmode, playmode, initialFrame }) {
-//related DOMElements
-    this.name;
-    this.object = object;
-    this.parent = object.contentDocument.querySelector(`svg`);
-    this.#triggers = triggers || [this.parent]
-//playmodes and loopmodes   
-    this.loop = loop || false;
-    this.#loopMode = validLoopmode(loopmode) || 'ff'
-    this.#playmode = validPlaymode(playmode) || 'ff'
-//Frames and timing related
-    this.frames = [...this.parent.querySelectorAll("svg")];
-    this.fps = (fps < 120 && fps) || 120;
-    this.min = (min >= 0 && min) || 0;
-    this.max = (max <= this.frames.length - 1 && max) || this.frames.length - 1;
-    this.skip = false;
-    this.#mode = this.loop && this.#loopMode !== 'pingpong' ? this.#loopMode : this.#playmode;
-    this.#current = initialFrame
+  #willToggle = false;
+  #object;
+  #frames;
+  #parent
+  #name
+  #condition = () => this.#current <= this.max;
+  #atStart = () => this.#current >= this.min;
+  #atEnd = () => this.#current <= this.max;
+  #reachPoint = (frame) => this.#current === frame;
 
-    declare(this);
-    this.#awake(initialFrame);
+  constructor({ object, triggers, min, max, fps, loop, loopmode, playmode, initialFrame,name }) {
+//related DOMElements
+this.#object = object;
+this.#parent = object.contentDocument.querySelector(`svg`);
+this.#triggers = triggers || [this.#parent]
+//playmodes and loopmodes   
+this.#loop = loop || false;
+this.#loopMode = validLoopmode(loopmode) || 'ff'
+this.#playmode = validPlaymode(playmode) || 'ff'
+//Frames and timing related
+this.#frames = [...this.#parent.querySelectorAll("svg")];
+this.fps = (fps < 120 && fps) || 120;
+this.min = (min >= 0 && min) || 0;
+this.max = (max <= this.#frames.length - 1 && max) || this.#frames.length - 1;
+this.skip = false;
+this.#mode = this.#loop && this.#loopMode !== 'pingpong' ? this.#loopMode : this.#playmode;
+this.#current = initialFrame
+
+this.#name = declare(this, name || null);  
+this.#awake(initialFrame);
   }
+  //GETTERS
+  getObject(){ return this.#object }
+  getCurrent(){ return this.#current }
+  getThis(){ return this.#parent }
+  getName(){ return this.#name }
+  
   // PRIVATE METHODS
 
   #setLoopMode() {
@@ -80,24 +91,20 @@ export class Animated {
         this.#condition = () => this.#atStart();
 	}
     }
-		return mode[this.#playmode] && mode[this.#playmode]()
+		return mode[this.#playmode]()
   }
   #awake(initial) {
     if(!initial || initial > this.max || initial < this.min){
       this.#mode === 'ff' ? this.#current = this.min : this.#current = this.max;
     } 
-    this.frames[this.#current]?.setAttribute("display", "initial");
-    console.log( `${this.name} is awake on "${this.#mode}" mode al frame ${this.#current}`)
-  }
-  #fixedUpdate(){
-    this.loop && this.#loopMode !== "pingpong" && this.setPlay(this.#loopMode);
+    this.#frames[this.#current]?.setAttribute("display", "block");
+    //console.log( `${this.name} is awake on "${this.#mode}" mode at frame ${this.#current}`)
   }
   #update() {
     if (!this.#isPlaying) return;
     const framesToDraw = Math.floor(
       (performance.now() - this.#lastFrameTime) / (1000 / this.fps)
     );
-    this.#fixedUpdate()
 
     this.#animate(framesToDraw);
 
@@ -107,52 +114,57 @@ export class Animated {
     for (let i = 0; i < framesToDraw; i++) {
       this.#lastFrameTime += 1000 / this.fps;
       this.#play();
+      this.beforeDraw(this)
     }
   }
   #play() {
     this.#setCondition();
     this.#condition() ? this.#draw()
-    : this.loop ? this.#setLoopMode()
+    : this.#loop ? this.#setLoopMode()
     : this.stop();
   }
   #draw() {
-    this.frames[this.#previous]?.setAttribute("display", "none");
-    this.frames[this.#current]?.setAttribute("display", "initial");
-    this.#previous = this.#current;
-    this.#current += this.#direction;
+    if(!this.skip){
+      this.#frames[this.#previous]?.setAttribute("display", "none");
+      this.#frames[this.#current]?.setAttribute("display", "block");
+      this.#previous = this.#current;
+      this.#current += this.#direction;
+    }this.skip === true && (this.skip = false)
   }
   
 // PUBLIC METHODS
 
-  start() {
-
+  start(playstraight) {
     if (!this.#isPlaying) {
-
-      this.#firstPlay  && (this.#firstPlay = false);
+     if( !this.firstPlay && !this.#loop && playstraight) {
+         this.#mode === 'ff' ? this.#current = this.min : this.#current = this.max;
+        }
+      this.firstPlay  && (this.firstPlay = false);
       this.#isPlaying = true;
       this.#lastFrameTime = performance.now();
       this.#update();
     }
     return this
   }
-
   stop() {
     if(this.#isPlaying){
       cancelAnimationFrame(this.#frameID);
+      this.#loop = false
       this.#isPlaying = false;
-      this.#previous = null
+      this.#willToggle && (this.#previous = null)
       this.#lastFrameTime = null;
     }
     return this
   }
-  toggle(on = null){
-    if(!this.#firstPlay){
+  toggle(on = false){
+    this.#willToggle = on;
+    if(!this.firstPlay){
       !this.#isPlaying || (!this.#atEnd() || !this.#atStart()) && (this.#previous = null)
-      !this.loop || this.#loopMode === 'pingpong' ? 
+      !this.#loop || this.#loopMode === 'pingpong' ? 
         this.#playmode === "ff" ? this.setPlay("rew") : this.setPlay("ff") :
         this.#loopMode === "ff" ? this.setLoop("rew") : this.setLoop("ff") ;
     }
-    on && this.start()
+    !this.#isPlaying && on && this.start()
     return this
   }
   setPlay( playmode ) {
@@ -161,10 +173,14 @@ export class Animated {
     return this
   }
   setLoop( loopmode ) {
-    !this.loop && (this.loop = true)
+    !this.#loop && (this.#loop = true)
     validLoopmode(loopmode) && (this.#loopMode = loopmode);
     this.#loopMode !== "pingpong" && this.setPlay(loopmode);
     this.#setCondition()
+    return this
+  }
+  setFPS(fps){
+    fps && (this.fps = fps)
     return this
   }
   addTriggers(triggers){
@@ -173,8 +189,29 @@ export class Animated {
   }
   outEvent(event,cb,triggerIndex){
     this.#triggers[triggerIndex].addEventListener(event,cb)
+    return this
   }
-  
+  goToFrame(frame, play = true){
+    this.#frames[this.#previous]?.setAttribute("display", "none");
+    this.#frames[this.#current]?.setAttribute("display", "none");
+    this.previous = null;
+    this.#current = frame;
+    this.#draw();
+    !play && this.stop();
+    return this
+  }
+  reach(point){
+    if( typeof point === 'number' && point >= 0 && point <= this.#frames.length -1  ) return this.#reachPoint(point)
+    else if(typeof point === 'string' && (point === 'max' || point === 'min')){
+       const mode = {
+         max : ()=> this.#atStart(),
+         min : ()=> this.#atEnd()
+       }
+       return mode[point]()
+     }
+     else return console.error('you must pass a valid frame number or "max" or "min"')
+  }
+  beforeDraw(ref){}
 }
 
 
@@ -199,8 +236,8 @@ const fltr = getArray().filter((anim) =>  obj === anim.object)
   if(fltr.length > 0) return console.error(SVGAliveError(obj));
   else return new Animated({object:obj, ...options})
 }
-const getValidName = (animation)=> {
-  const validName = animation.object.getAttribute('data').split('/').pop().split('.').slice(0, -1).join('.').replace(/[^a-zA-Z0-9_]/g, '_');
+const getValidName = (animation, name)=> {
+  const validName = name || animation.getObject().getAttribute('data').split('/').pop().split('.').slice(0, -1).join('.').replace(/[^a-zA-Z0-9_]/g, '_');
   let finalName = validName;
   for (const key in instances) {
     if (key === validName) {
@@ -214,10 +251,10 @@ const getValidName = (animation)=> {
   animation.name = finalName;
   return finalName;
 }
-const declare = (instance) => {
-  let finalName = getValidName(instance);
-  instance.name = finalName
-  instances[instance.name] = instance;
+const declare = (instance, name) => {
+  let finalName = getValidName(instance,name);
+  instances[finalName] = instance;
+  return finalName
 };
 
 export const setOneDOM = (obj,options) => evaluate( obj, options );

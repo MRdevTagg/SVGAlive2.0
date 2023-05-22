@@ -1,0 +1,28 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" x="0px" y="0px" width="28px" height="26px" viewBox="0 0 28 26">
+<defs>
+<linearGradient id="Gradient_1" gradientUnits="userSpaceOnUse" x1="-14.312500000000002" y1="0.05" x2="13.2125" y2="0.05" spreadMethod="pad">
+<stop  offset="0%" stop-color="#143942"/>
+
+<stop  offset="31.764705882352942%" stop-color="#236270"/>
+
+<stop  offset="49.411764705882355%" stop-color="#286E7E"/>
+
+<stop  offset="76.86274509803921%" stop-color="#468C9C"/>
+
+<stop  offset="98.82352941176471%" stop-color="#A8EEFF"/>
+</linearGradient>
+
+<g id="S_mbolo_2_38_Layer0_0_FILL">
+<path fill="url(#Gradient_1)" stroke="none" d="
+M 13.25 -10.75
+Q -0.1 -11.8 -14.3 -10.9 -9.05 0.25 -0.55 11.85 8.05 0.45 13.25 -10.75 Z"/>
+</g>
+</defs>
+
+<g transform="matrix( 0.939300537109375, 0, 0, 0.939300537109375, 14.5,13.35) ">
+<g transform="matrix( 1, 0, 0, 1, 0,0) ">
+<use xlink:href="#S_mbolo_2_38_Layer0_0_FILL"/>
+</g>
+</g>
+</svg>
