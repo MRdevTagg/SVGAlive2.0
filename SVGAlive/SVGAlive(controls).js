@@ -1,7 +1,7 @@
 export const $ = el => document.querySelector(el);
 export const $$ = el => document.querySelectorAll(el);
 export const tag = el => document.getElementsByTagName(el);
-const valid = (prop,validProps,propName) => {
+const valid = (prop, validProps, propName) => {
  if(prop)
  { const filter = validProps.filter( (validProp) => validProp === prop );
   if (filter.length === 0){ 
@@ -20,7 +20,7 @@ export const instances = {};
 export class Animated {
   #playmode = "ff";
   #loopMode = "pingpong";
-  #isPlaying = false;
+  isPlaying = false;
   firstPlay = true;
   #current = 0;
   #previous = null;
@@ -56,19 +56,22 @@ this.min = (min >= 0 && min) || 0;
 this.max = (max <= this.#frames.length - 1 && max) || this.#frames.length - 1;
 this.skip = false;
 this.#mode = this.#loop && this.#loopMode !== 'pingpong' ? this.#loopMode : this.#playmode;
-this.#current = initialFrame
+this.#current = initialFrame;
+
+this.afterDraw = null;
+this.beforeDraw = null;
+
 
 this.#name = declare(this, name || null);  
 this.#awake(initialFrame);
   }
   //GETTERS
-  getObject(){ return this.#object }
-  getCurrent(){ return this.#current }
-  getThis(){ return this.#parent }
-  getName(){ return this.#name }
+  getObject(){ return this.#object };
+  getCurrent(){ return this.#current };
+  getThis(){ return this.#parent };
+  getName(){ return this.#name };
   
   // PRIVATE METHODS
-
   #setLoopMode() {
      const mode = {
       ff : () => this.#current = this.min,
@@ -98,10 +101,10 @@ this.#awake(initialFrame);
       this.#mode === 'ff' ? this.#current = this.min : this.#current = this.max;
     } 
     this.#frames[this.#current]?.setAttribute("display", "block");
-    //console.log( `${this.name} is awake on "${this.#mode}" mode at frame ${this.#current}`)
+    //console.log( `${this.#name} is awake on "${this.#mode}" mode at frame ${this.#current}`)
   }
   #update() {
-    if (!this.#isPlaying) return;
+    if (!this.isPlaying) return;
     const framesToDraw = Math.floor(
       (performance.now() - this.#lastFrameTime) / (1000 / this.fps)
     );
@@ -113,8 +116,9 @@ this.#awake(initialFrame);
   #animate(framesToDraw) {
     for (let i = 0; i < framesToDraw; i++) {
       this.#lastFrameTime += 1000 / this.fps;
+      typeof this.beforeDraw === 'function' && this.beforeDraw(this)
       this.#play();
-      this.beforeDraw(this)
+      typeof this.afterDraw === 'function' && this.afterDraw(this)
     }
   }
   #play() {
@@ -131,26 +135,22 @@ this.#awake(initialFrame);
       this.#current += this.#direction;
     }this.skip === true && (this.skip = false)
   }
-  
 // PUBLIC METHODS
 
-  start(playstraight) {
-    if (!this.#isPlaying) {
-     if( !this.firstPlay && !this.#loop && playstraight) {
-         this.#mode === 'ff' ? this.#current = this.min : this.#current = this.max;
-        }
+  start() {
+    if (!this.isPlaying) {
       this.firstPlay  && (this.firstPlay = false);
-      this.#isPlaying = true;
+      this.isPlaying = true;
       this.#lastFrameTime = performance.now();
       this.#update();
     }
     return this
   }
   stop() {
-    if(this.#isPlaying){
+    if(this.isPlaying){
       cancelAnimationFrame(this.#frameID);
-      this.#loop = false
-      this.#isPlaying = false;
+      this.#loop = false 
+      this.isPlaying = false;
       this.#willToggle && (this.#previous = null)
       this.#lastFrameTime = null;
     }
@@ -159,12 +159,12 @@ this.#awake(initialFrame);
   toggle(on = false){
     this.#willToggle = on;
     if(!this.firstPlay){
-      !this.#isPlaying || (!this.#atEnd() || !this.#atStart()) && (this.#previous = null)
+      !this.isPlaying || (!this.#atEnd() || !this.#atStart()) && (this.#previous = null)
       !this.#loop || this.#loopMode === 'pingpong' ? 
         this.#playmode === "ff" ? this.setPlay("rew") : this.setPlay("ff") :
         this.#loopMode === "ff" ? this.setLoop("rew") : this.setLoop("ff") ;
     }
-    !this.#isPlaying && on && this.start()
+    !this.isPlaying && on && this.start()
     return this
   }
   setPlay( playmode ) {
@@ -173,7 +173,7 @@ this.#awake(initialFrame);
     return this
   }
   setLoop( loopmode ) {
-    !this.#loop && (this.#loop = true)
+    loopmode && !this.#loop && (this.#loop = true)
     validLoopmode(loopmode) && (this.#loopMode = loopmode);
     this.#loopMode !== "pingpong" && this.setPlay(loopmode);
     this.#setCondition()
@@ -187,7 +187,7 @@ this.#awake(initialFrame);
     this.#triggers = [...this.#triggers, ...triggers]
     return this
   }
-  outEvent(event,cb,triggerIndex){
+  outEvent(event,cb,triggerIndex = 0){
     this.#triggers[triggerIndex].addEventListener(event,cb)
     return this
   }
@@ -211,9 +211,8 @@ this.#awake(initialFrame);
      }
      else return console.error('you must pass a valid frame number or "max" or "min"')
   }
-  beforeDraw(ref){}
-}
 
+}
 
 
 
@@ -221,7 +220,9 @@ this.#awake(initialFrame);
 
 const SVGAliveError = (object) =>{
   return`
-    Error: Object reference alredy declared in an existing Animated instance
+    Error:${object instanceof HTMLObjectElement ? 
+    'Object reference alredy declared in an existing Animated instance' : 
+    'The element ho reference must be instanceof HTMLObjectElement'}
     Resolution: It won't be created
     Advice: Remove useless instantiation
     Instances: ${JSON.stringify(getArray().map(el => el.name))}
@@ -231,8 +232,8 @@ const SVGAliveError = (object) =>{
   
 }
 const evaluate = (obj,options) =>{
-
-const fltr = getArray().filter((anim) =>  obj === anim.object)
+if(obj instanceof HTMLObjectElement === false) return console.error(SVGAliveError(obj))
+const fltr = getArray().filter((anim) => anim.getObject() === obj)
   if(fltr.length > 0) return console.error(SVGAliveError(obj));
   else return new Animated({object:obj, ...options})
 }
@@ -262,7 +263,7 @@ export const setManyDOM = (objs,options) => objs.forEach( anim => evaluate(anim,
 export const setOne = (idOrClassName,options) => evaluate($(idOrClassName), options);
 export const setMany = (className,options) => $$(className).forEach( anim => evaluate(anim,options));
 
-export const getByObject = (obj)=> getArray().filter( anim => anim.object === obj )[0]
+export const getByObject = (obj)=> getArray().filter( anim => anim.getObject() === obj )[0]
 export const getThem = (name = null) => !name ? instances : instances[name];
 export const getArray = (filter = null, cb) => {
   const arrayToReturn = [];
