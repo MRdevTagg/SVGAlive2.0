@@ -4,21 +4,26 @@
 import { setMany, getThem, getArray, $, setOne,} from "./SVGAlive(controls).js";
 window.addEventListener("load", ()=> {
 
-	setMany(".your-id",{ fps: 25, playmode: 'rew',name:'arrow'});
-	setMany('.cube',{ fps: 45, playmode: 'rew',initialFrame : 15, name:'thing'},)
-	const { arrow,arrow_1,thing_5 } = getThem()
+	setMany(".your-id",{ fps: 40,name:'arrow'});
+	setMany('.cube',{ fps: 45,initialFrame : 15, name:'cube'})
+	const { arrow,arrow_1} = getThem()
+	const cubes = getArray('cube')
 	
-	arrow.addTriggers([$('body')]).setLoop('pingpong').setFPS(50).start()
-	arrow_1.beforeDraw = (arr) => {
-		!arr.firstPlay && arr.reach(5) && console.log(`${arr.getName()} reached frame ${arr.getCurrent()}`)
-	}
-	getArray('thing', (anim) => anim.outEvent('mouseenter', ()=> anim.toggle(true).setFPS(40),0 ))
+	cubes[8].setFPS(60)
+	cubes.map((cube, i)=> i % 2 && cube.setLoop('ff').start())
+	arrow.addTriggers([$('body')])
+	.setStage('half')
+	.setLoop('pingpong')
+	.setFPS(50)
+	.start()
+	.afterDraw = (anim) => !anim.firstPlay && anim.reach(20) && cubes[8].start()
+
+	arrow_1.setFPS(10).afterDraw = (anim) => !anim.firstPlay && anim.reach('middle') && cubes[3].toggle(true).setFPS()
+	getArray('cube', (anim) => anim.outEvent('mouseenter', ()=> anim.toggle(true)))
 	[5].setLoop('rew').start()
-
+	
 	getArray("arrow", (anim,i) => {
-		anim.outEvent( "click", ()=> anim.toggle(true), 0 )
-		i === 0 && anim.outEvent( "dblclick", ()=> !anim.isPlaying ? anim.start() : anim.stop(), 0 )
-
+		anim.outEvent( "click", ()=> anim.toggle(true))
 	});
 
 console.log(getThem())

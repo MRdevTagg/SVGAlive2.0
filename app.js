@@ -172,7 +172,7 @@ ${c.cyan}...Compiling files
   ${c.reset}Your ${c.bold+c.cyan}SVGAlive ${c.reset}.svg file are now ready to use in ${c.magenta+filePath}
   ${c.yellow}Total compiled frames: ${frames.length}
   ${c.yellow}Total IDs fixed: ${fixedids}
-         `);
+  `);
   fixedids = 0
   rl.question(`
 -- ${c.yellow}Close session Y/N? ${c.reset} (default N) : 
