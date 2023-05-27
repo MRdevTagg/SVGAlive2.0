@@ -10,7 +10,7 @@ window.addEventListener("load", ()=> {
 	const cubes = getArray('cube')
 	
 	cubes[8].setFPS(60)
-	cubes.map((cube, i)=> i % 2 && cube.setLoop('ff').start())
+	cubes.map((cube, i)=> i % 2 && i !== 3 && cube.setLoop('ff').start())
 	arrow.addTriggers([$('body')])
 	.setStage('half')
 	.setLoop('pingpong')

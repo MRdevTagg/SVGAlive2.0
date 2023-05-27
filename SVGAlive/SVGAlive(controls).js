@@ -211,7 +211,6 @@ export class Animated {
 
   start() {
     if (!this.isPlaying) {
-      !this.betweenLimits() && this.#setLoopMode()
       this.firstPlay && (this.firstPlay = false);
       this.isPlaying = true;
       this.#lastFrameTime = performance.now();
