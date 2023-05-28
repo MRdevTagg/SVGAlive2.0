@@ -18,34 +18,36 @@ const validLoopmode = (mode) =>
 
 export const instances = {};
 export class Animated {
+  #object;
+  #parent;
+  #frames;
+  #triggers;
+  #mode;
   #playmode = "ff";
+  #toToggle = false
+  #loop;
   #loopMode = "pingpong";
   isPlaying = false;
   firstPlay = true;
   #current = 0;
   #previous = null;
+  #maxFrames;
   #direction = 1;
-  #triggers;
   #frameID = null;
   #lastFrameTime = null;
-  #mode;
-  #loop;
-  #object;
-  #frames;
-  #maxFrames;
   #lap;
-  #parent;
   #name;
   #fps;
   #stages;
-  #stageID;
   #stageName;
+
+  #_askStage; // to ask for a stage change in the loop and trigger the setStage function
   #condition = () => this.#current <= this.#stages[this.#stageName].max;
-  #atStart = (frame = this.#current, stageName = this.#stageName) => frame >= this.#stages[stageName].min;
-  #atEnd = (frame = this.#current, stageName = this.#stageName) => frame <= this.#stages[stageName].max;
+  #limitMIN = (frame = this.#current, stageName = this.#stageName) => frame >= this.#stages[stageName].min;
+  #LimitMAX = (frame = this.#current, stageName = this.#stageName) => frame <= this.#stages[stageName].max;
   #reachPoint = (frame) => this.#current === frame;
   betweenLimits(frame = this.#current, stageName = this.#stageName) {
-    return !this.#atEnd(frame, stageName) || !this.#atStart(frame, stageName);
+    return !this.#LimitMAX(frame, stageName) || !this.#limitMIN(frame, stageName);
   }
 
   constructor({
@@ -63,41 +65,40 @@ export class Animated {
     //related DOMElements
     this.#object = object;
     this.#parent = object.contentDocument.querySelector(`svg`);
+    this.#frames = [...this.#parent.querySelectorAll("svg")];
     this.#triggers = triggers || [this.#parent];
     //playmodes and loopmodes
     this.#loop = loop || false;
     this.#loopMode = validLoopmode(loopmode) || "ff";
     this.#playmode = validPlaymode(playmode) || "ff";
     //Frames and timing related
-    this.#frames = [...this.#parent.querySelectorAll("svg")];
     this.#maxFrames = this.#frames.length - 1
     this.#fps = (fps < 120 && fps) || 24;
     this.min = (min >= 0 && min) || 0;
     this.max = (max <= this.#maxFrames && max) || this.#maxFrames;
     this.skip = false;
-    this.#mode =
-      this.#loop && this.#loopMode !== "pingpong"
-        ? this.#loopMode
-        : this.#playmode;
+    this.#mode = this.#loop && this.#loopMode !== "pingpong" ? this.#loopMode : this.#playmode;
     this.#current = initialFrame;
     this.#stages = {
     'initial': {
       min : this.min, 
       max : this.max,
       id : 1},
-    'half' :{
+    'last-half' :{
       min : this.max /2 ,
       max: this.max, 
-      id:2,
+      id:2, },
+    'quarter':{
+      min: this.max / 2,
+      max: this,max
     }
     }
     this.#stageName = 'initial'
-    this.#stageID = 0;
-    this.updateStages = () => {
-      this.#stageID = 0;
+    
+    this.updateStages = (stageID = 0) => {
       for (const key in this.#stages) {
-        this.#stageID++;
-        this.#stages[key].id = this.#stageID;
+        stageID++;
+        stages[key].id = stageID;
       }
     }
     // must pass an array of one or more stage objects including a prop called name with a string for the name
@@ -108,8 +109,9 @@ export class Animated {
       })
       this.updateStages();
     }
-    this.setStage = name => {
+    this.setStage = (name)=> {
     this.#stages[name] && this.betweenLimits(this.#current, name) && (this.#stageName = name);
+    console.log(this.#stages)
     return this
     }
     this.afterDraw = null;
@@ -121,25 +123,15 @@ export class Animated {
 
 
   //GETTERS
-  getObject() {
-    return this.#object;
-  }
-  getCurrent() {
-    return this.#current;
-  }
-  getParent() {
-    return this.#parent;
-  }
-  getName() {
-    return this.#name;
-  }
-  getFPS(){
-    return this.#fps;
-  }
+  getObject() { return this.#object; }
+  getCurrent() { return this.#current; }
+  getParent() { return this.#parent; }
+  getName() { return this.#name; }
+  getFPS() { return this.#fps; }
 
   // PRIVATE METHODS
-  #setLoopMode() {
-    const mode = {
+  #setEnding(mode = this.#loopMode) {
+    const modes = {
       ff: () => (this.#current = this.#stages[this.#stageName].min),
       pingpong: () => {
         this.#previous = null;
@@ -147,17 +139,17 @@ export class Animated {
       },
       rew: () => (this.#current = this.#stages[this.#stageName].max),
     };
-    return mode[this.#loopMode] && mode[this.#loopMode]();
+    return modes[mode] && modes[mode]();
   }
   #setCondition() {
     const mode = {
       ff: () => {
         this.#direction = 1;
-        this.#condition = () => this.#atEnd();
+        this.#condition = () => this.#LimitMAX();
       },
       rew: () => {
         this.#direction = -1;
-        this.#condition = () => this.#atStart();
+        this.#condition = () => this.#limitMIN();
       },
     };
     return mode[this.#playmode]();
@@ -169,7 +161,7 @@ export class Animated {
         : (this.#current = this.#stages[this.#stageName].max);
     }
     this.#frames[this.#current]?.setAttribute("display", "block");
-    //console.log( `${this.#name} is awake on "${this.#mode}" mode at frame ${this.#current}`)
+    console.log( `${this.#name} is awake on "${this.#mode}" mode at frame ${this.#current}`)
   }
   #update() {
     if (!this.isPlaying) return;
@@ -190,11 +182,10 @@ export class Animated {
     }
   }
   #play() {
-    //this.#setCondition();
     this.#condition()
       ? this.#draw()
       : this.#loop
-      ? this.#setLoopMode()
+      ? this.#setEnding()
       : this.stop();
   }
   #draw() {
@@ -228,7 +219,11 @@ export class Animated {
     }
     return this;
   }
+  pause(){
+    this.isPlaying && (this.isPlaying = false)
+  }
   toggle() {
+    this.#toToggle = true;
     if (!this.firstPlay) {
       /// to prevent rendering two frames at the same time before direction is switched
       !this.isPlaying || this.betweenLimits() && (this.#previous = null);
@@ -243,7 +238,6 @@ export class Animated {
     !this.isPlaying && this.start();
     return this;
   }
-
   setPlay(playmode) {
     validPlaymode(playmode) && (this.#playmode = playmode);
     this.#setCondition();
@@ -289,8 +283,8 @@ export class Animated {
       (point === "max" || point === "min") || point === 'middle'
     ) {
       const mode = {
-        max: () => this.#atStart(),
-        min: () => this.#atEnd(),
+        max: () => this.#limitMIN(),
+        min: () => this.#LimitMAX(),
         middle : () => { return this.#current === this.#stages[this.#stageName].max / 2 }
       };
       return mode[point]();
@@ -306,20 +300,19 @@ const SVGAliveError = (object) => {
     Error:${
       object instanceof HTMLObjectElement
         ? "Object reference alredy declared in an existing Animated instance"
-        : "The element ho reference must be a HTMLObjectElement"
+        : "The element reference must be a HTMLObjectElement"
     }
     Resolution: It won't be created
     Advice: Remove useless instantiation
     Instances: ${JSON.stringify(getArray().map((el) => el.name))}
-    path:  ${object.getAttribute("data")}
-    $id:  ${object.getAttribute("id")}
-    class:  ${object.getAttribute("class")}`;
+    data-path:  ${object.getAttribute("data")}
+    obect:  ${JSON.stringify(object)}`
 };
 const evaluate = (obj, options) => {
   if (obj instanceof HTMLObjectElement === false)
     return console.error(SVGAliveError(obj));
   const fltr = getArray().filter((anim) => anim.getObject() === obj);
-  if (fltr.length > 0) return console.error(SVGAliveError(obj));
+  if (fltr.length > 0 || obj instanceof HTMLObjectElement === false ) return console.error(SVGAliveError(obj));
   else return new Animated({ object: obj, ...options });
 };
 const getValidName = (animation, name) => {
