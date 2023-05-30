@@ -117,7 +117,7 @@ Evaluates multiple DOM objects by their class name and creates `Animated` instan
 Example usage:
 
 ```javascript
-setMany(".myElements", {fps:12,loop:true,loopMode:'pingpong'});
+setMany(".myElements", {fps:12,loop:true,loopMode:'toggle'});
 ```
 
 ### `getByObject(obj)`
@@ -224,7 +224,7 @@ animatedInstance.setPlayMode("rew");
 
 Sets the loop mode and updates the animation state.
 
-- `loopmode`: The new loop mode ("ff" for forward, "rew" for reverse, or "pingpong" for pingpong).
+- `loopmode`: The new loop mode ("ff" for forward, "rew" for reverse, or "toggle" for toggle).
 
 Example usage:
 

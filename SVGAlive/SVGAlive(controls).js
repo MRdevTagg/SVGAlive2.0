@@ -14,54 +14,62 @@ you must pass ${JSON.stringify(validProps).split(",").join(` or `).replace("[", 
 };
 const validPlaymode = (mode) => valid(mode, ["ff", "rew"], "playmode");
 const validLoopmode = (mode) =>
-  valid(mode, ["ff", "rew", "pingpong"], "loopmode");
+  valid(mode, ["ff", "rew", "toggle"], "loopmode");
 
 export const instances = {};
 export class Animated {
-  #object;
-  #parent;
-  #frames;
-  #triggers;
-  #mode;
-  #playmode = "ff";
-  #toToggle = false
-  #loop;
-  #loopMode = "pingpong";
-  isPlaying = false;
-  firstPlay = true;
-  #current = 0;
-  #previous = null;
-  #maxFrames;
-  #direction = 1;
-  #frameID = null;
-  #lastFrameTime = null;
-  #lap;
-  #name;
-  #fps;
-  #stages;
-  #stageName;
+  #name; // string name of the instance (it will be setted when the instance gets declared)
+  #object; // HTMLObjectElement associated with this instance
+  #parent; // parent svg element
+  #frames; // array of svgs childs (frames)
+  #triggers; // array of DOM nodes that could trigger and modify the animation behavior
 
-  #_askStage; // to ask for a stage change in the loop and trigger the setStage function
-  #condition = () => this.#current <= this.#stages[this.#stageName].max;
+  #playmode = "ff"; // animation play mode
+  #loop; // boolean indicating if animation looping should be enabled
+  #loopMode = "toggle"; // animation loop mode
+  #isPlaying = false; // boolean indicating if animation is playing
+  #paused = false; // boolean indicating if the animation is paused
+  firstPlay = true; // boolean indicating if it is the first time the animation is played
+  #current = 0; // number of current frame
+  #previous = null; // number of previous frame
+  #maxFrames; // number for max frames posible
+  #direction = 1; // direction in wich animation runs
+  #lap = 0; // number that indicates the times the animation was played
+  #fps; // number speed of animation
+  
+  #frameID = null; // ID for the requestAnimation frame
+  #lastFrameTime = null; // time since the last frame was drawed
+
+  #stages; // object that hold the stages (each stage will establish the MIN and MAX frames limit)
+  #stageName; // name of the current stage that will be used to access the stage objects inide #stages
+  #_askStage; // boolean to ask for a stage change in the animationloop and trigger the setStage function
+  #_requestedStageName; // string to hold the name of the requested stage
+  #_changeStageOnLap; // number that indicates the lap number to change the stage (when)
+
+  #setStage = (name)=> {
+    const condition = this.#_changeStageOnLap ? this.#lap === this.#_changeStageOnLap : true;
+    if( condition ){
+      if(this.#onLimits(this.#current, name)){
+        this.#stages[name]? (this.#stageName = name) : console.error("you must pass a valid stage name");
+        this.#_askStage = false; 
+        this.#_requestedStageName = null;
+        this.#_changeStageOnLap = null;
+      }
+    }
+    return this
+  }
+  #drawCondition = () => this.#current <= this.#stages[this.#stageName].max;
   #limitMIN = (frame = this.#current, stageName = this.#stageName) => frame >= this.#stages[stageName].min;
   #LimitMAX = (frame = this.#current, stageName = this.#stageName) => frame <= this.#stages[stageName].max;
+  #reachMIN = (frame = this.#current, stageName = this.#stageName) => frame === this.#stages[stageName].min;
+  #reachMAX = (frame = this.#current, stageName = this.#stageName) => frame === this.#stages[stageName].max;
   #reachPoint = (frame) => this.#current === frame;
-  betweenLimits(frame = this.#current, stageName = this.#stageName) {
+  #onLimits = (frame = this.#current, stageName = this.#stageName) => this.#playmode === 'ff' ? this.#reachMIN(frame,stageName) : this.#reachMAX(frame,stageName) 
+  #betweenLimits = (frame = this.#current, stageName = this.#stageName) => {
     return !this.#LimitMAX(frame, stageName) || !this.#limitMIN(frame, stageName);
   }
 
-  constructor({
-    object,
-    triggers,
-    min,
-    max,
-    fps,
-    loop,
-    loopmode,
-    playmode,
-    initialFrame,
-    name,
-  }) {
+  constructor({ object, triggers, min, max, fps, loop, loopmode, playmode, initialFrame, stages, name }) {
     //related DOMElements
     this.#object = object;
     this.#parent = object.contentDocument.querySelector(`svg`);
@@ -76,44 +84,28 @@ export class Animated {
     this.#fps = (fps < 120 && fps) || 24;
     this.min = (min >= 0 && min) || 0;
     this.max = (max <= this.#maxFrames && max) || this.#maxFrames;
-    this.skip = false;
-    this.#mode = this.#loop && this.#loopMode !== "pingpong" ? this.#loopMode : this.#playmode;
     this.#current = initialFrame;
-    this.#stages = {
+    
+    
+    this.#stages =  stages || {
     'initial': {
+      name: "initial",
       min : this.min, 
       max : this.max,
       id : 1},
     'last-half' :{
-      min : this.max /2 ,
+      name: "last-half",
+      min : this.max / 2 ,
       max: this.max, 
       id:2, },
     'quarter':{
-      min: this.max / 2,
-      max: this,max
-    }
-    }
+      name: "quarter",
+      min: this.max / 4,
+      max: this.max,
+      id:3,
+    },
+    };
     this.#stageName = 'initial'
-    
-    this.updateStages = (stageID = 0) => {
-      for (const key in this.#stages) {
-        stageID++;
-        stages[key].id = stageID;
-      }
-    }
-    // must pass an array of one or more stage objects including a prop called name with a string for the name
-    this.addStages = (stages)=> {
-      if(!stages || stages.length === 0) return
-      stages.map(({name,min,max}) => {
-      stages[name] = {min , max}
-      })
-      this.updateStages();
-    }
-    this.setStage = (name)=> {
-    this.#stages[name] && this.betweenLimits(this.#current, name) && (this.#stageName = name);
-    console.log(this.#stages)
-    return this
-    }
     this.afterDraw = null;
     this.beforeDraw = null;
 
@@ -128,106 +120,122 @@ export class Animated {
   getParent() { return this.#parent; }
   getName() { return this.#name; }
   getFPS() { return this.#fps; }
+  getLAP() { return this.#lap; }
+  getState() { return this.#isPlaying }
+  getStages() { return this.#stages }
+  getTriggers() { return this.#triggers }
+
 
   // PRIVATE METHODS
   #setEnding(mode = this.#loopMode) {
+    this.#loop && (this.#lap ++)
     const modes = {
       ff: () => (this.#current = this.#stages[this.#stageName].min),
-      pingpong: () => {
+      toggle: () => {
         this.#previous = null;
         this.toggle();
       },
       rew: () => (this.#current = this.#stages[this.#stageName].max),
     };
+    
     return modes[mode] && modes[mode]();
   }
-  #setCondition() {
+  #setDirection() {
     const mode = {
       ff: () => {
         this.#direction = 1;
-        this.#condition = () => this.#LimitMAX();
+        this.#drawCondition = () => this.#LimitMAX();
       },
       rew: () => {
         this.#direction = -1;
-        this.#condition = () => this.#limitMIN();
+        this.#drawCondition = () => this.#limitMIN();
       },
     };
     return mode[this.#playmode]();
   }
   #awake(initial) {
+    const mode = this.#loop && this.#loopMode !== "toggle" ? this.#loopMode : this.#playmode;
     if (!initial || initial > this.#stages[this.#stageName].max || initial < this.#stages[this.#stageName].min) {
-      this.#mode === "ff"
+      mode === "ff"
         ? (this.#current = this.#stages[this.#stageName].min)
         : (this.#current = this.#stages[this.#stageName].max);
     }
     this.#frames[this.#current]?.setAttribute("display", "block");
-    console.log( `${this.#name} is awake on "${this.#mode}" mode at frame ${this.#current}`)
+    console.log( `${this.#name} is awake on "${mode}" mode at frame ${this.#current}`)
   }
   #update() {
-    if (!this.isPlaying) return;
+    if (!this.#isPlaying) return;
+
     const framesToDraw = Math.floor(
       (performance.now() - this.#lastFrameTime) / (1000 / this.#fps)
     );
-
     this.#animate(framesToDraw);
 
     this.#frameID = requestAnimationFrame(this.#update.bind(this));
   }
   #animate(framesToDraw) {
+  
     for (let i = 0; i < framesToDraw; i++) {
       this.#lastFrameTime += 1000 / this.#fps;
-      typeof this.beforeDraw === "function" && this.beforeDraw(this);
-      this.#play();
-      typeof this.afterDraw === "function" && this.afterDraw(this);
+      if (!this.#paused){
+        typeof this.beforeDraw === "function" && this.beforeDraw(this);
+        this.#play();
+        typeof this.afterDraw === "function" && this.afterDraw(this);
+        this.#_askStage && this.#setStage(this.#_requestedStageName)
+      }  
     }
   }
   #play() {
-    this.#condition()
+    this.#drawCondition()
       ? this.#draw()
       : this.#loop
       ? this.#setEnding()
       : this.stop();
   }
   #draw() {
-    if (!this.skip) {
       this.#frames[this.#previous]?.setAttribute("display", "none");
       this.#frames[this.#current]?.setAttribute("display", "block");
       // in the next round the rendered frame will be the previous
       this.#previous = this.#current;
-      this.betweenLimits && (this.#current += this.#direction);
-    }
-    this.skip === true && (this.skip = false);
+      this.#betweenLimits && (this.#current += this.#direction);
   }
-  // PUBLIC METHODS
 
+  // PUBLIC METHODS
   start() {
-    if (!this.isPlaying) {
+    if (!this.#isPlaying) {
       this.firstPlay && (this.firstPlay = false);
-      this.isPlaying = true;
+      this.#isPlaying = true;
       this.#lastFrameTime = performance.now();
       this.#update();
     }
     return this;
   }
+  restart(){
+    this.firstPlay && this.start()
+    if(!this.#loop && !this.#isPlaying){
+      this.#setEnding(this.#playmode)
+      this.start()
+    }
+  }
   stop() {
-    if (this.isPlaying) {
+    if (this.#isPlaying) {
       cancelAnimationFrame(this.#frameID);
       this.#loop = false;
-      this.isPlaying = false;
-      this.#previous = this.#current
+      this.#lap = 0
+      this.#isPlaying = false;
+      this.#current = this.#previous;
       this.#lastFrameTime = null;
     }
     return this;
   }
   pause(){
-    this.isPlaying && (this.isPlaying = false)
+    this.#paused ? this.#paused = false : this.#paused = true
   }
   toggle() {
-    this.#toToggle = true;
     if (!this.firstPlay) {
       /// to prevent rendering two frames at the same time before direction is switched
-      !this.isPlaying || this.betweenLimits() && (this.#previous = null);
-      !this.#loop || this.#loopMode === "pingpong"
+      !this.#isPlaying || this.#betweenLimits() && (this.#previous = null);
+      !this.#loop || this.#loopMode === "toggle"
         ? this.#playmode === "ff"
           ? this.setPlay("rew")
           : this.setPlay("ff")
@@ -235,24 +243,24 @@ export class Animated {
         ? this.setLoop("rew")
         : this.setLoop("ff");
     }
-    !this.isPlaying && this.start();
+    !this.#isPlaying && this.start();
     return this;
   }
   setPlay(playmode) {
     validPlaymode(playmode) && (this.#playmode = playmode);
-    this.#setCondition();
+    this.#setDirection();
     return this;
   }
   setLoop(loopmode) {
-    loopmode && !this.#loop && (this.#loop = true);
-    validLoopmode(loopmode) && (this.#loopMode = loopmode);
-    this.#loopMode !== "pingpong" && this.setPlay(loopmode);
-    this.#setCondition();
+    if(!validLoopmode(loopmode)) return this;
+    !this.#loop && (this.#loop = true);
+    this.#loopMode = loopmode;
+    this.#loopMode !== "toggle" && this.setPlay(loopmode);
+    this.#setDirection();
     return this;
   }
-  setFPS(fps) {
-    fps && fps <= 120 && fps >= 0 && (this.#fps = fps);
-    return this;
+  endLoop(){
+    this.#loop = false
   }
   addTriggers(triggers) {
     this.#triggers = [...this.#triggers, ...triggers];
@@ -260,6 +268,24 @@ export class Animated {
   }
   outEvent(event, cb, triggerIndex = 0) {
     this.#triggers[triggerIndex].addEventListener(event, cb);
+    return this;
+  }
+  // must pass an array with one or more stage objects : {min : 0, max ; 15, name : "stagename"}
+  addStages(stages){
+    if(!stages || stages.length === 0) return
+      stages.map(({name,min,max}) => {
+      stages[name] = { min, max, name }
+    })
+    return this
+  }
+  requestStage(name, onLap){
+    this.#_askStage = true;
+    this.#_requestedStageName = name;
+    onLap && (this.#_changeStageOnLap = onLap)
+    return this
+  }
+  setFPS(fps) {
+    fps && fps <= 120 && fps >= 0 && (this.#fps = fps);
     return this;
   }
   goToFrame(frame, play = true) {
@@ -272,26 +298,22 @@ export class Animated {
     return this;
   }
   reach(point) {
-    if (
-      typeof point === "number" &&
-      point >= 0 &&
-      point <= this.#maxFrames
-    )
+    if ( typeof point === "number" && point >= 0 && point <= this.#maxFrames )
       return this.#reachPoint(point);
-    else if (
-      typeof point === "string" &&
-      (point === "max" || point === "min") || point === 'middle'
-    ) {
+    else if (typeof point === "string" && (point === "max" || point === "min") || point === 'half') {
       const mode = {
         max: () => this.#limitMIN(),
         min: () => this.#LimitMAX(),
-        middle : () => { return this.#current === this.#stages[this.#stageName].max / 2 }
+        half : () => { return this.#current === this.#stages[this.#stageName].max / 2 }
       };
       return mode[point]();
     } else
       return console.error(
-        'you must pass a valid frame number or "max" or "min"'
+        'you must pass a valid frame number or "max" or "min" or "half"'
       );
+  }
+  reachLAP(lap){
+    return this.#lap === lap;
   }
 }
 
@@ -299,14 +321,14 @@ const SVGAliveError = (object) => {
   return `
     Error:${
       object instanceof HTMLObjectElement
-        ? "Object reference alredy declared in an existing Animated instance"
+        ? "Object element is alredy asociated to an existing Animated instance"
         : "The element reference must be a HTMLObjectElement"
     }
     Resolution: It won't be created
     Advice: Remove useless instantiation
     Instances: ${JSON.stringify(getArray().map((el) => el.name))}
     data-path:  ${object.getAttribute("data")}
-    obect:  ${JSON.stringify(object)}`
+    object:  ${JSON.stringify(object)}`
 };
 const evaluate = (obj, options) => {
   if (obj instanceof HTMLObjectElement === false)
@@ -345,16 +367,15 @@ export const setMany = (objs, options) =>{
   objects.forEach((obj) => evaluate(obj, options))
 };
 
-export const getByObject = (obj) =>
-  getArray().filter((anim) => anim.getObject() === obj)[0];
+export const getByObject = (obj) => obj instanceof HTMLObjectElement === true && getArray().filter((anim) => anim.getObject() === obj)[0];
 export const getThem = (name = null) => (!name ? instances : instances[name]);
 export const getArray = (filter = null, cb) => {
-  const arrayToReturn = [];
+  const array = [];
   for (const key in instances) {
     filter
-      ? key.includes(filter) && arrayToReturn.push(instances[key])
-      : arrayToReturn.push(instances[key]);
+      ? key.includes(filter) && array.push(instances[key])
+      : array.push(instances[key]);
   }
-  cb && arrayToReturn.map((anim, i, arr) => cb(anim, i, arr));
-  return arrayToReturn;
+  cb && array.map((anim, i, arr) => cb(anim, i, arr));
+  return array;
 };

@@ -21,7 +21,7 @@ The constructor function initializes several properties of the Animated instance
 
 `playmode`: The play mode of the animation, which can be "ff" (forward) or "rew" (reverse)
 
-`loopMode`: The loop mode of the animation, which can be "ff" (forward), "rew" (reverse), or "pingpong"
+`loopMode`: The loop mode of the animation, which can be "ff" (forward), "rew" (reverse), or "toggle"
 
 `frames`: An array containing all the frames of the animation
 
