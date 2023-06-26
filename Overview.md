@@ -1,8 +1,8 @@
-# SVGAlive
+# AliveSVG
 
 ## Overview
 
-Terminal App to compile svg files to a single svg document to perform frame-based animations using a built-in library I created. It can be integrated with React (includes a React functional component template) or JS (includes a template script to instantiate the SVGAlive class). The final product is an .exe file svg builder within a directory structure. It provides an easy-to-use and colored readline interface and an animation handler that allows control over loop-mode, play-mode, frames-per-second, and more. It also includes a User-guide to implement this on any project you may have. I've tested it with different types of svg files, and it worked each time. The .exe file has been tested on Windows only.
+Terminal App to compile svg files to a single svg document to perform frame-based animations using a built-in library I created. It can be integrated with React (includes a React functional component template) or JS (includes a template script to instantiate the AliveSVG class). The final product is an .exe file svg builder within a directory structure. It provides an easy-to-use and colored readline interface and an animation handler that allows control over loop-mode, play-mode, frames-per-second, and more. It also includes a User-guide to implement this on any project you may have. I've tested it with different types of svg files, and it worked each time. The .exe file has been tested on Windows only.
 
 ## Motivation
 

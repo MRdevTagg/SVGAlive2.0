@@ -1,5 +1,5 @@
 
-# SVGAlive Developers Guide (it's still in proggress)
+# AliveSVG Developers Guide (it's still in proggress)
 
 ## Animated Class
 
@@ -59,7 +59,7 @@ The constructor function also calls the declare function with this as an argumen
 
 ## Internal Methods
 
-### SVGAliveError(object)
+### AliveSVGError(object)
 
 Generates an error message for an object that is already declared in an existing `Animated` instance.
 

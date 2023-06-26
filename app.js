@@ -7,9 +7,13 @@ const readline = require('readline');
 const fs = require('fs');
 const { JSDOM } = require('jsdom');
 const glob = require('glob');
-let filepathString =''
 
-let fixedids = 0;
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+let fixedids = 0; // to track ammount of fixed IDs
 const attrs = [
   'clip-path',
   'filter',
@@ -58,24 +62,27 @@ const attrs = [
   'xlink:signature',
   'xlink:verifier'
 ];
-const c = {
+const ansi = (color)=>{
+  const colors ={
   red: '\x1b[31m',
   green: '\x1b[32m',
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
+  white: '\x1b[37m',
   yellow: '\x1b[33m',
   reset: '\x1b[0m',
   bold: '\x1b[1m',
-  dim: '\x1b[2m',
   underline: '\x1b[4m',
   blink: '\x1b[5m',
   invert: '\x1b[7m'
 };
+return typeof color === 'string' ? colors[color] : color.map(c => colors[c])
+}
 
 
 function setSize(parent, frames) {
-  console.log(c.cyan + '...fixing sizes');
+  console.log(ansi('cyan') + '...fixing sizes');
   parent.setAttribute('width', frames[0].getAttribute('width'));
   parent.setAttribute('height', frames[0].getAttribute('height'));
   parent.setAttribute('viewBox', `0 0 ${frames[0].getAttribute('width')} ${frames[0].getAttribute('height')}`);
@@ -94,13 +101,12 @@ function setSize(parent, frames) {
 function idMatch(el, oldID, newID, attr) {
   const attrValue = el.getAttribute(attr);
   if (attrValue) {
-    const isUrlFormat = attrValue.startsWith('url(') && attrValue.endsWith(')');
-    const extractedID = isUrlFormat ? attrValue.slice(4, -1) : attrValue;
-
-    if (extractedID === oldID) {
+    const isUrl = attrValue.startsWith('url(') && attrValue.endsWith(')');
+    const cleanID = isUrl ? attrValue.slice(4, -1) : attrValue;
+    if (cleanID === oldID) {
       fixedids += 1;
-      const newAttrValue = isUrlFormat ? `url(${newID})` : newID ;
-      el.setAttribute(attr, newAttrValue);
+      const finalID = isUrl ? `url(${newID})` : newID ;
+      el.setAttribute(attr, finalID);
     }
   }
 }
@@ -119,16 +125,6 @@ async function fixIDs(frame, i) {
     });
   });
 }
-async function waitForFileToExist(filePath) {
-  // Check if the file exists
-  if (fs.existsSync(filePath)) {
-    return;
-  }
-
-  // If the file doesn't exist yet, wait 100ms and check again
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  await waitForFileToExist(filePath);
-}
 function getAvailableFilename(filepath, filename) {
   let index = 0;
   
@@ -137,27 +133,28 @@ function getAvailableFilename(filepath, filename) {
     const extension = filename.slice(filename.lastIndexOf('.'));
     const basename = filename.slice(0, filename.includes('(') ? filename.lastIndexOf('(') : filename.lastIndexOf('.'));
     filename = `${basename}(${index})${extension}`;
-  }
-  
+  } 
   return filename;
 }
-
-async function Init({ filePath }) {
-  console.log(` ${c.bold+c.red}DONT CLOSE!${c.reset}
-${c.cyan}...Compiling files
-...Generating svg file to ${c.magenta}${filePath}`)
+async function waitForFileToExist(filePath) {
+  if (fs.existsSync(filePath)) return;
+  await new Promise((resolve) => setTimeout(resolve, 100));
   await waitForFileToExist(filePath);
-  console.log(`${c.cyan}...Re-opening file to fix`)
+}
+async function Init(filePath) {
+  console.log(` ${ansi('bold','red')}DONT CLOSE!${ansi('reset')}
+${ansi('cyan')}...Compiling files
+...Generating svg file to ${ansi('magenta')}${filePath}`)
+  await waitForFileToExist(filePath);
+  console.log(`${ansi('cyan')}...Re-opening file to fix IDs and sizes`)
   const file = fs.readFileSync(filePath, 'utf-8');
   const { document } = new JSDOM(file).window;
   const parent = document.querySelector('svg');
   const frames = Array.from(document.querySelectorAll('svg > svg'));
  
-
-
   setSize(parent,frames)
 
-  console.log(`${c.cyan}...Making svg responsive
+  console.log(`${ansi('cyan')}...Making svg responsive
 ...Resolving ID conflicts`)
   
   frames.forEach((frame, i) => {
@@ -167,30 +164,18 @@ ${c.cyan}...Compiling files
 
   const output = parent.outerHTML;
   fs.writeFileSync(filePath, output);
-  console.log(`
-  ${c.bold+c.green}COMPLETED! 
-  ${c.reset}Your ${c.bold+c.cyan}SVGAlive ${c.reset}.svg file are now ready to use in ${c.magenta+filePath}
-  ${c.yellow}Total compiled frames: ${frames.length}
-  ${c.yellow}Total IDs fixed: ${fixedids}
-  `);
+  console.log(`\n  ${ansi('bold','green')}COMPLETED! 
+  ${ansi('reset')}Your ${ansi('bold','cyan')}AliveSVG ${ansi('reset')}.svg file are now ready to use in ${ansi('magenta')+filePath}
+  ${ansi('yellow')}Total compiled frames: ${frames.length}
+  ${ansi('yellow')}Total IDs fixed: ${fixedids}\n`);
   fixedids = 0
   rl.question(`
--- ${c.yellow}Close session Y/N? ${c.reset} (default N) : 
+-- ${ansi('yellow')}Close session Y/N? ${ansi('reset')} (default N) : 
 `, (close = 'n') => {
     close.toLowerCase() !== 'y' && (close = 'n');
-    close.toLowerCase() === 'n' ? createAnimation() : rl.close();
+    close.toLowerCase() === 'n' ? createAliveSVG() : rl.close();
   })
 }
-
-
-
-
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
 function createSVG({ sources, output, destiny}) {
 
   return gulp
@@ -208,42 +193,35 @@ function createSVG({ sources, output, destiny}) {
     .pipe(gulp.dest(destiny))
 }
 
-
-
-async function createAnimation() {
-  console.log(`\x1b[36m \x1b[2mSVGALive! \x1b[37mNEW OPERATION:`)
-  rl.question('-- \x1b[33mSources(frames) folder name\x1b[37m(or default)?  : ', (frames) => {
-    rl.question('-- \x1b[33mAnimation(output file) name \x1b[37m(optional) ?  : ', (name) => {
-      rl.question('-- \x1b[33mDestiny folder Name \x1b[37m(optional) ? : ', (destiny) => {
-        const baseDestiny = `./SVGAlive/sources/${destiny ? `${ destiny }/` : ''}`;
+async function createAliveSVG() {
+  console.log(`${ansi('cyan')} AliveSVG! ${ansi('white')}NEW OPERATION:`)
+  rl.question(`-- ${ansi('yellow')}Sources(frames) folder name${ansi('white')}(or default)?  : `, (frames) => {
+    rl.question(`-- ${ansi('yellow')}Animation(output file) name ${ansi('white')}(optional) ?  : `, (name) => {
+      rl.question(`-- ${ansi('yellow')}Destiny folder Name ${ansi('white')}(optional) ? : `, (destiny) => {
+        const baseDestiny = `./AliveSVG/sources/${destiny ? `${ destiny }/` : ''}`;
         const outputSVG = `${name ||  frames || 'nameless-anim'}.svg`;
-        const finalOutput = getAvailableFilename(baseDestiny,outputSVG)
+        const fileName = getAvailableFilename(baseDestiny,outputSVG)
         const sources = glob.sync(`./src/${frames || ''}/*.svg`);
         if (sources.length === 0) {
-          console.log(`\x1b[31m ERROR: No SVG files found in \x1b[35m'./src/${frames? frames : ''}'`);
-          console.log('\x1b[37m check if your files exist in the folder or check the folder name you provided and try again')
-          rl.question(`
--- \x1b[33m Try Again Y/N? \x1b[37m (default Y) : 
-`, (close = 'n') => {
+          console.log(`${ansi('red')} ERROR: No SVG files found in ${ansi('magenta')}'./src/${frames? frames : ''}'`);
+          console.log(`${ansi('white')} check if your files exist in the folder or check the folder name you provided and try again`)
+          rl.question(`\n-- ${ansi('yellow')} Try Again Y/N? ${ansi('white')} (default Y) :`, (close = 'n') => {
             close.toLowerCase() !== 'n' && (close = 'y');
-            close.toLowerCase() === 'y' ? createAnimation() : rl.close();
+            close.toLowerCase() === 'y' ? createAliveSVG() : rl.close();
           })
         }else{
           createSVG({
           sources,
-          output: finalOutput,
+          output: fileName,
           destiny: baseDestiny,
-        });
-        filepathString = `${baseDestiny}${finalOutput}`;       
-        Init({filePath:filepathString});
+        });             
+        Init(`${baseDestiny}${fileName}`);
         }
-
-
       });
     });
   });
 }
 
-createAnimation();
+createAliveSVG();
 
 

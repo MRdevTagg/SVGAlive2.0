@@ -1,19 +1,19 @@
 
-# How to Use SVGAlive
+# How to Use AliveSVG
 
-SVGAlive is a software and Animation library designed to create javascript-based animated and interactive single-file SVGs in a simple and code-less way.
+AliveSVG is a software and Animation library designed to create javascript-based animated and interactive single-file SVGs in a simple and code-less way.
 
-## The App (SVGAlive.exe)
+## The App (AliveSVG.exe)
 
 - It creates a single SVG from a given SVG sequence files.
-- You don't need to worry about ID conflicts within the frames because SVGAlive resolves them internally during the compilation process.
+- You don't need to worry about ID conflicts within the frames because AliveSVG resolves them internally during the compilation process.
 - Also, the sizes will be fixed.
 
 **Convert Multiple SVGs into a Single Animated and Interactive SVG:**
 
 1. Put the resources you will use as frames inside the "/src" folder. You can create a sub-folder for each animation.
 2. If you have multiple animations, you can make a subdirectory inside the "/src" folder for each animation's frames.
-3. Run the SVGAlive.exe file.
+3. Run the AliveSVG.exe file.
 4. The first prompt will ask you to put the name of the sub-folder where you put the resources. If you leave it blank, it will be assumed that you have the frame resources in the "src" folder. Put the name or leave it blank (depending on your case) and hit enter.
 5. The second prompt will ask you to give a name to the final SVG compiled file (this is optional). Choose a name (or not) and hit enter again.
 6. The final prompt will ask you to give a name to the destination sub-folder in case you want to create one. Put the name or leave it blank and hit enter.
@@ -21,7 +21,7 @@ SVGAlive is a software and Animation library designed to create javascript-based
 
 **IMPORTANT!!**: Do not close the app until you get the COMPLETED message.
 
-Now your file will be fixed and compiled in the /SVGAlive/sources directory.
+Now your file will be fixed and compiled in the /AliveSVG/sources directory.
 
 *NOTE*: The final svg file must be passed as data to an object tag, and If you’re previewing the page using a code Injection tool (like liveserver), it will render a parsererror within the object 'cause liveserver injects code inside the svg (but it will only affects when previewing the page, not on deployment), to solve this you can use fiveServer extension or a no-code-injection like http-server or similar to preview the page.
 Using vite or React you don’t have any issues of this type.
@@ -30,12 +30,12 @@ Using vite or React you don’t have any issues of this type.
 
 **To use it with Javascript and HTML:**
 
-1. Copy the entire "SVGAlive" folder into your root directory. (you can choose which animations you want to keep inside the 'sources' folder)
+1. Copy the entire "AliveSVG" folder into your root directory. (you can choose which animations you want to keep inside the 'sources' folder)
 2. You can eliminate the .jsx component (from the copied folder of course)
 3. In your HTML, the SVG must be embedded into an object element passing its URL into the data attribute, for example:
 
 ```html
-<object data="./SVGAlive/sources/your-folder-path(if there is one)/your-svg-name.svg" type="image/svg+xml"></object>
+<object data="./AliveSVG/sources/your-folder-path(if there is one)/your-svg-name.svg" type="image/svg+xml"></object>
 ```
 
 **To customize the animation behavior:**
@@ -44,7 +44,7 @@ Using vite or React you don’t have any issues of this type.
 (this is not mandatory but i recomend to do so, as it is going to make you easier to create the `Animated` instance):
 
 ```html
-    <object id="your-anim-id" data="../SVGAlive/your-animation-name.svg" type="image/svg+xml"></object>
+    <object id="your-anim-id" data="../AliveSVG/your-animation-name.svg" type="image/svg+xml"></object>
 ```
 
 ## **NOTES:**
@@ -251,12 +251,12 @@ animatedInstance.start({toggle: true, loop: true});
 
 ```html
 <body>
-  <h1>SVGAlive HTML example</h1>
-  <object class="your-id" data="SVGAlive/sources/example.svg" type="image/svg+xml"></object>
-  <object class="your-id" data="SVGAlive/sources/example.svg" type="image/svg+xml"></object>
-  <object class="other-id" data="SVGAlive/sources/other.svg" type="image/svg+xml"></object>
+  <h1>AliveSVG HTML example</h1>
+  <object class="your-id" data="AliveSVG/sources/example.svg" type="image/svg+xml"></object>
+  <object class="your-id" data="AliveSVG/sources/example.svg" type="image/svg+xml"></object>
+  <object class="other-id" data="AliveSVG/sources/other.svg" type="image/svg+xml"></object>
 
-  <script src="SVGAlive/SVGAlive(JS).js" type="module"></script>
+  <script src="AliveSVG/AliveSVG(JS).js" type="module"></script>
 </body>
 ```
 
@@ -264,7 +264,7 @@ animatedInstance.start({toggle: true, loop: true});
 
 ```javascript
 // import all the required functions from the controls(assuming it is in this path)
-import { setMany, getThem, getArray, setOne,} from "./SVGAlive(controls).js";
+import { setMany, getThem, getArray, setOne,} from "./AliveSVG(controls).js";
 // Do all the magic after the content loads
 window.addEventListener("load", ()=> {
 //create the instances
@@ -288,29 +288,29 @@ window.addEventListener("load", ()=> {
 
 NOTES:
 
-- This doesn't mean that you necessarily have to create the Animated({}) instance on this script, you can create it anywhere as long as you import the these methods from "./SVGAlive(controls).js".
+- This doesn't mean that you necessarily have to create the Animated({}) instance on this script, you can create it anywhere as long as you import the these methods from "./AliveSVG(controls).js".
 
 ## To use in ReactJS, you must do the following
 
-1. Copy the entire "SVGAlive" folder into your root directory. (you can choose which animations you want to keep inside the 'sources' folder)
-2. You can eliminate the SVGAlive(JS).js script (from the copied folder, of course)
+1. Copy the entire "AliveSVG" folder into your root directory. (you can choose which animations you want to keep inside the 'sources' folder)
+2. You can eliminate the AliveSVG(JS).js script (from the copied folder, of course)
 3. You can use it like this in your app:
 
 All the customization now are the props you pass to the component:
 
-- `name`: will reference your file name (assuming your files are in the /SVGAlive/sources directory, otherwise you will have to modify the component)
+- `name`: will reference your file name (assuming your files are in the /AliveSVG/sources directory, otherwise you will have to modify the component)
 - `controls`: is an object that has all the props and methods from the Animated class
 - `play`: if true, the animation will start playing
 
 In this example, I've created three instances of a cube animation with different behaviors:
 
 ```jsx
-import { SVGAlive } from '../SVGAlive/SVGAlive';
+import { AliveSVG } from '../AliveSVG/AliveSVG';
 
 <>
-    <SVGAlive name='cube' controls={{fps:12, loop:false}}/>
-    <SVGAlive name='cube' controls={{fps:30, playMode:'rew'}}/>
-    <SVGAlive name='cube' />
+    <AliveSVG name='cube' controls={{fps:12, loop:false}}/>
+    <AliveSVG name='cube' controls={{fps:30, playMode:'rew'}}/>
+    <AliveSVG name='cube' />
 </>
 ```
 
@@ -320,6 +320,6 @@ I'm currently working on this component and extending the Animated class functio
 It will be ready very soon!!
 
 In the meantime
-Enjoy creating animated and interactive SVGs with SVGAlive!
+Enjoy creating animated and interactive SVGs with AliveSVG!
 
 ***Mathias Romeo***
