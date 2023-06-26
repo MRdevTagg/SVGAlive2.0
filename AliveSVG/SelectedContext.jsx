@@ -1,7 +1,7 @@
 import { createContext, useState } from "react";
 
 import PropTypes from "prop-types";
-import { useUpdatedStats } from "../../src/hooks/useUpdatedStats";
+import { useUpdatedStats } from "./useUpdatedStats";
 
 export const  SelectedContext = createContext();
 

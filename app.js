@@ -77,7 +77,7 @@ const ansi = (color)=>{
   blink: '\x1b[5m',
   invert: '\x1b[7m'
 };
-return typeof color === 'string' ? colors[color] : color.map(c => colors[c])
+return typeof color === 'string' ? colors[color] : color.map(c => ansi(c)).join('');
 }
 
 
@@ -142,7 +142,7 @@ async function waitForFileToExist(filePath) {
   await waitForFileToExist(filePath);
 }
 async function Init(filePath) {
-  console.log(` ${ansi('bold','red')}DONT CLOSE!${ansi('reset')}
+  console.log(` \n${ansi(['bold','red','underline'])}DONT CLOSE!${ansi('reset')}
 ${ansi('cyan')}...Compiling files
 ...Generating svg file to ${ansi('magenta')}${filePath}`)
   await waitForFileToExist(filePath);
@@ -164,8 +164,8 @@ ${ansi('cyan')}...Compiling files
 
   const output = parent.outerHTML;
   fs.writeFileSync(filePath, output);
-  console.log(`\n  ${ansi('bold','green')}COMPLETED! 
-  ${ansi('reset')}Your ${ansi('bold','cyan')}AliveSVG ${ansi('reset')}.svg file are now ready to use in ${ansi('magenta')+filePath}
+  console.log(`\n${ansi(['bold','green','underline'])}COMPLETED!${ansi('reset')}\n
+  Your ${ansi(['bold','cyan'])}AliveSVG${ansi('reset')}.svg file are now ready to use in ${ansi('magenta')+filePath}
   ${ansi('yellow')}Total compiled frames: ${frames.length}
   ${ansi('yellow')}Total IDs fixed: ${fixedids}\n`);
   fixedids = 0
@@ -194,16 +194,16 @@ function createSVG({ sources, output, destiny}) {
 }
 
 async function createAliveSVG() {
-  console.log(`${ansi('cyan')} AliveSVG! ${ansi('white')}NEW OPERATION:`)
+  console.log(`${ansi(['blink','cyan','bold','underline'])}AliveSVG compiler${ansi('reset')}\n`)
   rl.question(`-- ${ansi('yellow')}Sources(frames) folder name${ansi('white')}(or default)?  : `, (frames) => {
     rl.question(`-- ${ansi('yellow')}Animation(output file) name ${ansi('white')}(optional) ?  : `, (name) => {
       rl.question(`-- ${ansi('yellow')}Destiny folder Name ${ansi('white')}(optional) ? : `, (destiny) => {
-        const baseDestiny = `./AliveSVG/sources/${destiny ? `${ destiny }/` : ''}`;
+        const baseDestiny = `./compiled/${destiny ? `${ destiny }/` : ''}`;
         const outputSVG = `${name ||  frames || 'nameless-anim'}.svg`;
         const fileName = getAvailableFilename(baseDestiny,outputSVG)
-        const sources = glob.sync(`./src/${frames || ''}/*.svg`);
+        const sources = glob.sync(`./frames/${frames || ''}/*.svg`);
         if (sources.length === 0) {
-          console.log(`${ansi('red')} ERROR: No SVG files found in ${ansi('magenta')}'./src/${frames? frames : ''}'`);
+          console.log(`\n${ansi('red')}ERROR: No SVG files found in ${ansi('magenta')}'./frames/${frames? frames : ''}'`);
           console.log(`${ansi('white')} check if your files exist in the folder or check the folder name you provided and try again`)
           rl.question(`\n-- ${ansi('yellow')} Try Again Y/N? ${ansi('white')} (default Y) :`, (close = 'n') => {
             close.toLowerCase() !== 'n' && (close = 'y');
